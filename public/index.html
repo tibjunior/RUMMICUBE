@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rummikub 6-Players - Online</title>
+  <!-- Google Fonts para tipografia premium -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Notificações/Alertas do Jogo -->
+  <div id="toast-container"></div>
+
+  <!-- CONTAINER PRINCIPAL -->
+  <main id="app">
+
+    <!-- TELA DE AUTENTICAÇÃO / LOGIN -->
+    <section id="auth-screen" class="screen active">
+      <div class="auth-card">
+        <div class="brand">
+          <h1>RUMMI<span>KUB</span></h1>
+          <p class="tagline">Edição Especial para até 6 Jogadores</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="username-input">Seu Nome</label>
+          <input type="text" id="username-input" placeholder="Digite seu nome..." autocomplete="off" maxlength="12">
+        </div>
+
+        <div class="divider">
+          <span>OU</span>
+        </div>
+
+        <div class="form-group">
+          <label for="room-code-input">Código da Sala</label>
+          <input type="text" id="room-code-input" placeholder="Ex: ABCD" autocomplete="off" maxlength="4">
+        </div>
+
+        <div class="action-buttons">
+          <button id="create-room-btn" class="btn primary">Criar Nova Sala</button>
+          <button id="join-room-btn" class="btn secondary">Entrar na Sala</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA DO LOBBY -->
+    <section id="lobby-screen" class="screen">
+      <div class="lobby-card">
+        <div class="lobby-header">
+          <h2>Sala de Espera</h2>
+          <div class="room-code-display">
+            <span>Código da Sala:</span>
+            <strong id="room-code-value">----</strong>
+          </div>
+        </div>
+
+        <!-- Container do Link de Compartilhamento -->
+        <div id="share-link-container" class="share-link-box">
+          <label for="share-link-value">Link público de convite:</label>
+          <div class="share-input-group">
+            <input type="text" id="share-link-value" readonly value="Carregando túnel público do servidor...">
+            <button id="copy-link-btn" class="btn secondary">Copiar Link</button>
+          </div>
+        </div>
+
+        <div class="players-list-container">
+          <h3>Jogadores Conectados (<span id="lobby-count">0</span>/6)</h3>
+          <ul id="players-list">
+            <!-- Inserido dinamicamente pelo client.js -->
+          </ul>
+        </div>
+
+        <!-- Painel de Configurações da Sala (Antes de Iniciar) -->
+        <div class="lobby-settings-container">
+          <h3>Configurações da Partida</h3>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label for="setting-meld">Pontos do Meld Inicial</label>
+              <select id="setting-meld" class="select-setting">
+                <option value="30">30 pontos (Padrão)</option>
+                <option value="0">Sem Meld (0 pontos)</option>
+                <option value="40">40 pontos</option>
+                <option value="50">50 pontos</option>
+              </select>
+            </div>
+            
+            <div class="setting-item">
+              <label for="setting-duplicates">Permitir Conjuntos Idênticos</label>
+              <select id="setting-duplicates" class="select-setting">
+                <option value="true">Sim (Padrão)</option>
+                <option value="false">Não</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="setting-timer">Tempo do Turno</label>
+              <select id="setting-timer" class="select-setting">
+                <option value="60">60 segundos</option>
+                <option value="90">90 segundos (Padrão)</option>
+                <option value="120">120 segundos</option>
+                <option value="0">Sem limite</option>
+              </select>
+            </div>
+
+            <div class="setting-item">
+              <label for="setting-jokers">Máx Coringas p/ Conjunto</label>
+              <select id="setting-jokers" class="select-setting">
+                <option value="0">Sem limite</option>
+                <option value="1">No máximo 1</option>
+                <option value="2">No máximo 2</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="lobby-actions">
+          <div class="lobby-buttons-group" style="display: flex; flex-direction: column; gap: 10px;">
+            <button id="add-bot-btn" class="btn secondary font-bold" style="display: none; width: 100%;">+ Adicionar Jogador IA</button>
+            <button id="start-game-btn" class="btn primary" disabled style="width: 100%;">Aguardando Jogadores...</button>
+          </div>
+          <p class="lobby-tip" style="margin-top: 12px;">O jogo precisa de no mínimo 2 jogadores para iniciar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TELA DO JOGO (GAME BOARD) -->
+    <section id="game-screen" class="screen">
+      <!-- Painel Superior (Header do Jogo) -->
+      <header class="game-header">
+        <div class="logo-small">
+          <h2>RUMMI<span>KUB</span></h2>
+        </div>
+        
+        <div class="game-info-bar">
+          <div id="game-timer-pill" class="info-pill timer-pill">
+            <span>Tempo:</span>
+            <strong id="game-timer-val">90s</strong>
+          </div>
+          <div class="info-pill">
+            <span>Peças no Monte:</span>
+            <strong id="pool-count-val">0</strong>
+          </div>
+          <div class="info-pill code-pill">
+            <span>Sala:</span>
+            <strong id="game-room-code">----</strong>
+          </div>
+        </div>
+        
+        <button id="btn-lobby-exit" class="btn danger font-bold" style="padding: 8px 16px; font-size: 0.85rem;">Sair da Partida</button>
+      </header>
+
+      <!-- Layout Principal do Jogo -->
+      <div class="game-layout">
+        
+        <!-- BARRA LATERAL (Placar e Status dos Jogadores) -->
+        <aside class="sidebar">
+          <div class="sidebar-box">
+            <h3>Jogadores</h3>
+            <ul id="scoreboard-list">
+              <!-- Inserido dinamicamente pelo client.js -->
+            </ul>
+          </div>
+
+          <div class="sidebar-box log-box">
+            <h3>Histórico de Ações</h3>
+            <div id="game-logs" class="logs-container">
+              <!-- Logs do jogo -->
+            </div>
+          </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL DO TABULEIRO -->
+        <div class="board-area">
+          <!-- A MESA (Tabuleiro Comum) -->
+          <div class="board-wrapper">
+            <div class="board-title">Mesa Comum (Arraste as peças aqui)</div>
+            <div id="game-board" class="tiles-grid board-grid">
+              <!-- Grade de 12x25 gerada pelo client.js -->
+            </div>
+          </div>
+
+          <!-- CONTROLES E SUPORTE DO JOGADOR -->
+          <div class="player-controls-area">
+            
+            <!-- Barra de Ações (Botões) -->
+            <div class="action-bar">
+              <div class="action-group">
+                <button id="btn-draw" class="btn warning font-bold">Comprar Peça</button>
+                <button id="btn-undo" class="btn danger">Desfazer Turno</button>
+              </div>
+              
+              <div class="action-group">
+                <button id="btn-sort-value" class="btn info">Ordenar p/ Número</button>
+                <button id="btn-sort-color" class="btn info">Ordenar p/ Cor</button>
+              </div>
+
+              <div class="action-group main-action">
+                <button id="btn-end-turn" class="btn success font-bold">Finalizar Turno</button>
+              </div>
+            </div>
+
+            <!-- O SUPORTE (Rack Privado) -->
+            <div class="rack-wrapper">
+              <div class="rack-title">Seu Suporte Privado</div>
+              <div id="player-rack" class="tiles-grid rack-grid">
+                <!-- Grade de 2x20 gerada pelo client.js -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- POPUP DE FIM DE JOGO -->
+    <div id="game-over-overlay" class="overlay">
+      <div class="overlay-card">
+        <h2 id="winner-title">Temos um Vencedor!</h2>
+        <p id="winner-announcement">O jogador <strong>Jogador X</strong> venceu a partida!</p>
+        <button id="btn-restart-lobby" class="btn primary">Voltar para o Lobby</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Biblioteca Socket.io fornecida pelo próprio servidor express -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
