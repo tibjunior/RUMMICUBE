@@ -150,25 +150,68 @@
           </div>
         </div>
         
+        <div class="theme-selector-wrapper" style="margin-left: 15px; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Tema:</span>
+          <select id="theme-select" class="select-setting" style="padding: 6px 12px; font-size: 0.85rem; width: 140px; background: rgba(0,0,0,0.3); height: 32px; border-radius: 6px; border: 1px solid var(--bg-card-border); color: white; cursor: pointer;">
+            <option value="dark">Escuro Futurista</option>
+            <option value="wood">Clássico Madeira</option>
+            <option value="neon">Cyberpunk Neon</option>
+          </select>
+        </div>
+        
         <button id="btn-lobby-exit" class="btn danger font-bold" style="padding: 8px 16px; font-size: 0.85rem;">Sair da Partida</button>
       </header>
 
       <!-- Layout Principal do Jogo -->
       <div class="game-layout">
         
-        <!-- BARRA LATERAL (Placar e Status dos Jogadores) -->
+        <!-- BARRA LATERAL (Abas de Placar/Chat) -->
         <aside class="sidebar">
-          <div class="sidebar-box">
-            <h3>Jogadores</h3>
-            <ul id="scoreboard-list">
-              <!-- Inserido dinamicamente pelo client.js -->
-            </ul>
+          <div class="sidebar-tabs" style="display: flex; gap: 5px; margin-bottom: 5px; width: 100%;">
+            <button id="tab-game" class="btn secondary active" style="flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 6px;">Jogo</button>
+            <button id="tab-chat" class="btn secondary" style="flex: 1; padding: 8px; font-size: 0.8rem; border-radius: 6px;">Chat</button>
           </div>
 
-          <div class="sidebar-box log-box">
-            <h3>Histórico de Ações</h3>
-            <div id="game-logs" class="logs-container">
-              <!-- Logs do jogo -->
+          <!-- ABA 1: Painel do Jogo (Placar + Logs) -->
+          <div id="panel-game" class="tab-panel active">
+            <div class="sidebar-box" style="margin-bottom: 12px;">
+              <h3>Jogadores</h3>
+              <ul id="scoreboard-list">
+                <!-- Inserido dinamicamente pelo client.js -->
+              </ul>
+            </div>
+
+            <div class="sidebar-box log-box">
+              <h3>Histórico de Ações</h3>
+              <div id="game-logs" class="logs-container">
+                <!-- Logs do jogo -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ABA 2: Painel de Chat & Reações -->
+          <div id="panel-chat" class="tab-panel" style="display: none; height: 100%; flex-direction: column; gap: 12px;">
+            <div class="sidebar-box chat-container-box" style="flex: 1; display: flex; flex-direction: column; min-height: 250px;">
+              <h3>Chat da Sala</h3>
+              <div id="chat-messages" class="logs-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 5px; background: rgba(0,0,0,0.15); border-radius: 6px; margin-bottom: 8px; font-size: 0.8rem;">
+                <!-- Mensagens do chat -->
+              </div>
+              <div class="chat-input-wrapper" style="display: flex; gap: 6px;">
+                <input type="text" id="chat-input" placeholder="Mensagem..." autocomplete="off" maxlength="60" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--bg-card-border); color: white;">
+                <button id="btn-send-chat" class="btn primary" style="padding: 8px 12px; font-size: 0.85rem; border-radius: 6px;">Enviar</button>
+              </div>
+            </div>
+
+            <div class="sidebar-box reactions-box">
+              <h3>Reações Rápidas</h3>
+              <div class="reactions-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; justify-items: center;">
+                <button class="reaction-btn" data-emoji="😆" style="font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--bg-card-border); border-radius: 8px; padding: 6px; cursor: pointer; transition: transform 0.15s ease; width: 100%;">😆</button>
+                <button class="reaction-btn" data-emoji="🤔" style="font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--bg-card-border); border-radius: 8px; padding: 6px; cursor: pointer; transition: transform 0.15s ease; width: 100%;">🤔</button>
+                <button class="reaction-btn" data-emoji="😢" style="font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--bg-card-border); border-radius: 8px; padding: 6px; cursor: pointer; transition: transform 0.15s ease; width: 100%;">😢</button>
+                <button class="reaction-btn" data-emoji="😠" style="font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--bg-card-border); border-radius: 8px; padding: 6px; cursor: pointer; transition: transform 0.15s ease; width: 100%;">😠</button>
+                <button class="reaction-btn" data-emoji="🎉" style="font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--bg-card-border); border-radius: 8px; padding: 6px; cursor: pointer; transition: transform 0.15s ease; width: 100%;">🎉</button>
+                <button class="reaction-btn" data-emoji="💩" style="font-size: 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--bg-card-border); border-radius: 8px; padding: 6px; cursor: pointer; transition: transform 0.15s ease; width: 100%;">💩</button>
+              </div>
             </div>
           </div>
         </aside>
@@ -176,8 +219,9 @@
         <!-- ÁREA PRINCIPAL DO TABULEIRO -->
         <div class="board-area">
           <!-- A MESA (Tabuleiro Comum) -->
-          <div class="board-wrapper">
+          <div class="board-wrapper" style="position: relative;">
             <div class="board-title">Mesa Comum (Arraste as peças aqui)</div>
+            <div id="emoji-floating-area" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 100;"></div>
             <div id="game-board" class="tiles-grid board-grid">
               <!-- Grade de 12x25 gerada pelo client.js -->
             </div>

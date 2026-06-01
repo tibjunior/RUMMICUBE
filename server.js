@@ -341,13 +341,14 @@ function startTurnTimer(room) {
 // MOTOR DE INTELIGÊNCIA ARTIFICIAL (IA / BOTS)
 // ==========================================================================
 
-function findSetsInRack(rack) {
-  const sets = [];
-  const tiles = rack.filter(t => !t.isJoker);
+function findGroupWithKJokers(rack, k) {
+  const jokers = rack.filter(t => t.isJoker);
+  if (jokers.length < k) return null;
 
-  // 1. Achar Grupos (mesmo valor, cores diferentes)
+  const normalTiles = rack.filter(t => !t.isJoker);
+
   const byValue = new Map();
-  tiles.forEach(t => {
+  normalTiles.forEach(t => {
     if (!byValue.has(t.value)) byValue.set(t.value, []);
     byValue.get(t.value).push(t);
   });
@@ -356,49 +357,89 @@ function findSetsInRack(rack) {
     const uniqueColorMap = new Map();
     list.forEach(t => uniqueColorMap.set(t.color, t));
     const uniqueColorTiles = Array.from(uniqueColorMap.values());
-    if (uniqueColorTiles.length >= 3) {
-      sets.push(uniqueColorTiles.slice(0, 4));
+
+    const minNormalNeeded = Math.max(1, 3 - k);
+    if (uniqueColorTiles.length >= minNormalNeeded) {
+      const groupSize = uniqueColorTiles.length + k;
+      if (groupSize >= 3 && groupSize <= COLORS.length) {
+        return [...uniqueColorTiles, ...jokers.slice(0, k)];
+      }
     }
   }
 
-  // 2. Achar Sequências (mesma cor, consecutivos)
+  return null;
+}
+
+function findRunWithKJokers(rack, k) {
+  const jokers = rack.filter(t => t.isJoker);
+  if (jokers.length < k) return null;
+
+  const normalTiles = rack.filter(t => !t.isJoker);
+
   const byColor = new Map();
-  tiles.forEach(t => {
+  normalTiles.forEach(t => {
     if (!byColor.has(t.color)) byColor.set(t.color, []);
     byColor.get(t.color).push(t);
   });
 
   for (const [color, list] of byColor.entries()) {
-    list.sort((a, b) => a.value - b.value);
-    const uniqueValList = [];
-    const seenVals = new Set();
-    list.forEach(t => {
-      if (!seenVals.has(t.value)) {
-        seenVals.add(t.value);
-        uniqueValList.push(t);
-      }
-    });
+    const valMap = new Map();
+    list.forEach(t => valMap.set(t.value, t));
 
-    let tempRun = [];
-    for (let i = 0; i < uniqueValList.length; i++) {
-      const tile = uniqueValList[i];
-      if (tempRun.length === 0) {
-        tempRun.push(tile);
-      } else {
-        const lastTile = tempRun[tempRun.length - 1];
-        if (tile.value === lastTile.value + 1) {
-          tempRun.push(tile);
-        } else if (tile.value > lastTile.value + 1) {
-          if (tempRun.length >= 3) {
-            sets.push([...tempRun]);
+    for (let start = 1; start <= 11; start++) {
+      for (let L = 3; start + L - 1 <= 13; L++) {
+        const end = start + L - 1;
+        
+        let missingCount = 0;
+        for (let v = start; v <= end; v++) {
+          if (!valMap.has(v)) {
+            missingCount++;
           }
-          tempRun = [tile];
+        }
+
+        if (missingCount === k) {
+          const runTiles = [];
+          let jokerIdx = 0;
+          for (let v = start; v <= end; v++) {
+            if (valMap.has(v)) {
+              runTiles.push(valMap.get(v));
+            } else {
+              runTiles.push(jokers[jokerIdx++]);
+            }
+          }
+          return runTiles;
         }
       }
     }
-    if (tempRun.length >= 3) {
-      sets.push(tempRun);
-    }
+  }
+
+  return null;
+}
+
+function findOneSet(rack, maxJokersAllowed) {
+  for (let k = 0; k <= maxJokersAllowed; k++) {
+    const group = findGroupWithKJokers(rack, k);
+    if (group) return group;
+
+    const run = findRunWithKJokers(rack, k);
+    if (run) return run;
+  }
+  return null;
+}
+
+function findSetsInRack(rack, settings) {
+  const maxJokers = (settings && typeof settings.maxJokersPerSet === 'number') ? settings.maxJokersPerSet : 0;
+  const maxJokersAllowed = maxJokers > 0 ? maxJokers : 4;
+
+  const sets = [];
+  let tempRack = [...rack];
+
+  while (true) {
+    const foundSet = findOneSet(tempRack, maxJokersAllowed);
+    if (!foundSet) break;
+    sets.push(foundSet);
+    const usedIds = new Set(foundSet.map(t => t.id));
+    tempRack = tempRack.filter(t => !usedIds.has(t.id));
   }
 
   return sets;
@@ -478,7 +519,7 @@ function tryAcoplarPeças(bot, room) {
 }
 
 function tryMeldInicial(bot, room) {
-  const sets = findSetsInRack(bot.rack);
+  const sets = findSetsInRack(bot.rack, room.settings);
   if (sets.length === 0) return false;
 
   let totalMeldPoints = 0;
@@ -536,7 +577,7 @@ function runBotTurn(room) {
     const acoplou = tryAcoplarPeças(bot, room);
     
     // B. Tenta baixar novos conjuntos inteiros do rack
-    const sets = findSetsInRack(bot.rack);
+    const sets = findSetsInRack(bot.rack, room.settings);
     let baixouNovos = false;
     for (const set of sets) {
       const placed = placeNewSetOnBoard(room.board, set);
@@ -1154,6 +1195,40 @@ io.on('connection', (socket) => {
     startTurnTimer(targetRoom);
 
     broadcastRoomUpdate(targetRoom);
+  });
+
+  // Chat da partida
+  socket.on('sendChat', ({ msg }) => {
+    let targetRoom = null;
+    let senderPlayer = null;
+    for (const room of rooms.values()) {
+      const player = room.players.find(p => p.socketId === socket.id);
+      if (player) {
+        targetRoom = room;
+        senderPlayer = player;
+        break;
+      }
+    }
+    if (targetRoom && senderPlayer) {
+      io.to(targetRoom.id).emit('chatMsg', { senderName: senderPlayer.name, msg });
+    }
+  });
+
+  // Reações Rápidas
+  socket.on('sendReaction', ({ emoji }) => {
+    let targetRoom = null;
+    let senderPlayer = null;
+    for (const room of rooms.values()) {
+      const player = room.players.find(p => p.socketId === socket.id);
+      if (player) {
+        targetRoom = room;
+        senderPlayer = player;
+        break;
+      }
+    }
+    if (targetRoom && senderPlayer) {
+      io.to(targetRoom.id).emit('reaction', { senderName: senderPlayer.name, emoji });
+    }
   });
 
   // Desconexão

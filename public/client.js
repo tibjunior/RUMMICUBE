@@ -1,6 +1,143 @@
 // Conexão WebSocket com o servidor (conecta ao host local atual)
 const socket = io();
 
+/* ==========================================================================
+   GERENCIADOR DE EFEITOS SONOROS (WEB AUDIO API)
+   ========================================================================== */
+const SoundManager = {
+  ctx: null,
+
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  },
+
+  playClack() {
+    this.init();
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(70, this.ctx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.08);
+  },
+
+  playDraw() {
+    this.init();
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+
+    const bufferSize = this.ctx.sampleRate * 0.12;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(900, this.ctx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.12);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    noise.start();
+    noise.stop(this.ctx.currentTime + 0.12);
+  },
+
+  playError() {
+    this.init();
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(115, this.ctx.currentTime);
+
+    osc2.type = 'sawtooth';
+    osc2.frequency.setValueAtTime(118, this.ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc1.start();
+    osc2.start();
+    osc1.stop(this.ctx.currentTime + 0.28);
+    osc2.stop(this.ctx.currentTime + 0.28);
+  },
+
+  playTick() {
+    this.init();
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(750, this.ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.025);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.025);
+  },
+
+  playVictory() {
+    this.init();
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+
+    const now = this.ctx.currentTime;
+    const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+
+      gain.gain.setValueAtTime(0.15, now + idx * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.09 + 0.25);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now + idx * 0.09);
+      osc.stop(now + idx * 0.09 + 0.25);
+    });
+  }
+};
+
+
 // ESTADO GLOBAL DO CLIENTE
 let myId = null;
 let roomCode = null;
@@ -94,7 +231,10 @@ function showToast(message, type = 'info') {
   }, 4000);
 }
 
-socket.on('errorMsg', (msg) => showToast(msg, 'error'));
+socket.on('errorMsg', (msg) => {
+  showToast(msg, 'error');
+  SoundManager.playError();
+});
 socket.on('infoMsg', (msg) => {
   showToast(msg, 'info');
   addLog(msg, 'system');
@@ -174,6 +314,11 @@ function startLocalCountdown(expiresAt) {
 
     const timeLeft = Math.max(0, Math.round((turnExpiresAt - Date.now()) / 1000));
     gameTimerVal.textContent = `${timeLeft}s`;
+
+    // Tique-taque sonoro no tempo crítico
+    if (timeLeft <= 10 && timeLeft > 0) {
+      SoundManager.playTick();
+    }
 
     // Atualiza classes do visualizador do timer
     if (timeLeft <= 15) {
@@ -390,6 +535,7 @@ socket.on('boardUpdated', ({ board }) => {
   if (!isMyTurn) {
     boardState = board;
     renderBoard();
+    SoundManager.playClack(); // Ouvir peça jogada pelo oponente
   }
 });
 
@@ -399,6 +545,7 @@ socket.on('gameOver', ({ winnerName }) => {
   winnerAnnouncement.innerHTML = `O jogador <strong>${winnerName}</strong> jogou todas as peças e venceu o Rummikub!`;
   gameOverOverlay.classList.add('active');
   addLog(`Fim de jogo! ${winnerName} venceu a partida!`, 'success');
+  SoundManager.playVictory(); // Som de vitória
 });
 
 // Logs do Jogo
@@ -718,6 +865,7 @@ function handleDrop(e) {
   // 3. Atualiza DOM localmente para resposta instantânea
   renderBoard();
   renderRack();
+  SoundManager.playClack(); // Som ao soltar a peça
 
   // 4. Se a alteração envolveu o tabuleiro comum, notifica o servidor em tempo real
   // para que outros jogadores possam assistir a edição da mesa
@@ -734,6 +882,7 @@ function handleDrop(e) {
 btnDraw.addEventListener('click', () => {
   if (!isMyTurn) return;
   socket.emit('drawTile');
+  SoundManager.playDraw(); // Som de compra
 });
 
 // Desfazer jogadas do turno atual
@@ -760,4 +909,107 @@ btnEndTurn.addEventListener('click', () => {
     board: boardState,
     rack: flatRack
   });
+});
+
+/* ==========================================================================
+   LÓGICA DE TEMAS, CHAT E ABAS DA SIDEBAR
+   ========================================================================== */
+// 1. Alternador de Temas
+const themeSelect = document.getElementById('theme-select');
+const savedTheme = localStorage.getItem('game-theme') || 'dark';
+document.body.className = `theme-${savedTheme}`;
+if (themeSelect) {
+  themeSelect.value = savedTheme;
+  themeSelect.addEventListener('change', () => {
+    const selected = themeSelect.value;
+    document.body.className = `theme-${selected}`;
+    localStorage.setItem('game-theme', selected);
+    SoundManager.playClack();
+  });
+}
+
+// 2. Alternador de Abas na Sidebar
+const tabGame = document.getElementById('tab-game');
+const tabChat = document.getElementById('tab-chat');
+const panelGame = document.getElementById('panel-game');
+const panelChat = document.getElementById('panel-chat');
+
+if (tabGame && tabChat) {
+  tabGame.addEventListener('click', () => {
+    tabGame.classList.add('active');
+    tabChat.classList.remove('active');
+    panelGame.style.display = 'block';
+    panelChat.style.display = 'none';
+    SoundManager.init();
+  });
+
+  tabChat.addEventListener('click', () => {
+    tabChat.classList.add('active');
+    tabGame.classList.remove('active');
+    panelChat.style.display = 'flex';
+    panelGame.style.display = 'none';
+    SoundManager.init();
+  });
+}
+
+// 3. Comunicação por Chat de Mensagens
+const chatInput = document.getElementById('chat-input');
+const btnSendChat = document.getElementById('btn-send-chat');
+const chatMessages = document.getElementById('chat-messages');
+
+function sendChatMessage() {
+  const text = chatInput.value.trim();
+  if (text) {
+    socket.emit('sendChat', { msg: text });
+    chatInput.value = '';
+  }
+}
+
+if (btnSendChat && chatInput) {
+  btnSendChat.addEventListener('click', sendChatMessage);
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      sendChatMessage();
+    }
+  });
+}
+
+socket.on('chatMsg', ({ senderName, msg }) => {
+  if (chatMessages) {
+    const entry = document.createElement('div');
+    entry.className = 'chat-msg-entry';
+    entry.innerHTML = `<span class="chat-msg-sender">${senderName}:</span><span class="chat-msg-text">${msg}</span>`;
+    chatMessages.appendChild(entry);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    SoundManager.playDraw();
+  }
+});
+
+// 4. Reações Rápidas e Emojis Flutuantes
+document.querySelectorAll('.reaction-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const emoji = btn.dataset.emoji;
+    socket.emit('sendReaction', { emoji });
+  });
+});
+
+const emojiFloatingArea = document.getElementById('emoji-floating-area');
+
+socket.on('reaction', ({ senderName, emoji }) => {
+  if (!emojiFloatingArea) return;
+
+  const floating = document.createElement('div');
+  floating.className = 'floating-emoji';
+  floating.innerText = emoji;
+
+  const randX = Math.random() * (emojiFloatingArea.clientWidth - 50);
+  floating.style.left = `${randX}px`;
+  floating.style.bottom = `10px`;
+
+  emojiFloatingArea.appendChild(floating);
+  SoundManager.playClack();
+
+  setTimeout(() => {
+    floating.remove();
+  }, 2200);
 });
