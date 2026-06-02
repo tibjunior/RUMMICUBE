@@ -174,9 +174,6 @@ const addBotBtn = document.getElementById('add-bot-btn');
 const roomCodeVal = document.getElementById('room-code-value');
 const lobbyCount = document.getElementById('lobby-count');
 const playersList = document.getElementById('players-list');
-const shareLinkContainer = document.getElementById('share-link-container');
-const shareLinkValue = document.getElementById('share-link-value');
-const copyLinkBtn = document.getElementById('copy-link-btn');
 
 // Elementos Jogo
 const poolCountVal = document.getElementById('pool-count-val');
@@ -334,32 +331,7 @@ function startLocalCountdown(expiresAt) {
   timerInterval = setInterval(updateDisplay, 1000);
 }
 
-// Evento de Copiar Link do Lobby
-copyLinkBtn.addEventListener('click', () => {
-  const url = shareLinkValue.value;
-  // Só copia se for um link real
-  if (url && url.startsWith('http')) {
-    navigator.clipboard.writeText(url)
-      .then(() => {
-        showToast('Link de convite copiado!', 'success');
-        copyLinkBtn.textContent = 'Copiado!';
-        copyLinkBtn.style.background = 'var(--btn-success)';
-        copyLinkBtn.style.borderColor = 'var(--btn-success)';
-        copyLinkBtn.style.color = 'white';
-        
-        setTimeout(() => {
-          copyLinkBtn.textContent = 'Copiar Link';
-          copyLinkBtn.style.background = '';
-          copyLinkBtn.style.borderColor = '';
-          copyLinkBtn.style.color = '';
-        }, 2000);
-      })
-      .catch(err => {
-        showToast('Falha ao copiar automaticamente.', 'error');
-        console.error(err);
-      });
-  }
-});
+
 
 // Enviar atualizações de configurações do lobby (Apenas Host)
 document.querySelectorAll('.select-setting').forEach(select => {
@@ -403,13 +375,7 @@ socket.on('roomUpdate', (room) => {
     switchScreen(lobbyScreen);
     lobbyCount.textContent = room.players.length;
     playersList.innerHTML = '';
-    
-    // Atualiza campo de link público do localtunnel
-    if (room.tunnelUrl) {
-      shareLinkValue.value = room.tunnelUrl;
-    } else {
-      shareLinkValue.value = 'Gerando link público temporário no servidor...';
-    }
+
     
     const me = room.players.find(p => p.id === myId);
     const isHost = me && me.host;
