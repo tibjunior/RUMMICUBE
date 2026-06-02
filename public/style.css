@@ -1391,7 +1391,7 @@ body.theme-neon .tile {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   text-align: left;
-  height: 580px;
+  height: auto;
   display: flex;
   flex-direction: column;
 }
@@ -1406,7 +1406,7 @@ body.theme-neon .tile {
   backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
-  height: 580px;
+  height: auto;
 }
 
 .lobby-chat-header {
