@@ -430,6 +430,10 @@ const createRoomBtn = document.getElementById('create-room-btn');
 const joinRoomBtn = document.getElementById('join-room-btn');
 const startBtn = document.getElementById('start-game-btn');
 const addBotBtn = document.getElementById('add-bot-btn');
+const btnOpenSettings = document.getElementById('btn-open-settings');
+const settingsModal = document.getElementById('settings-modal');
+const closeSettingsModal = document.getElementById('close-settings-modal');
+const btnSaveSettings = document.getElementById('btn-save-settings');
 const roomCodeVal = document.getElementById('room-code-value');
 const lobbyCount = document.getElementById('lobby-count');
 const playersList = document.getElementById('players-list');
@@ -559,9 +563,33 @@ startBtn.addEventListener('click', () => {
   socket.emit('startGame');
 });
 
-addBotBtn.addEventListener('click', () => {
-  socket.emit('addBot');
-});
+if (addBotBtn) {
+  addBotBtn.addEventListener('click', () => {
+    socket.emit('addBot');
+  });
+}
+
+// Ouvintes para o modal de Regras da Sala
+if (btnOpenSettings && settingsModal) {
+  btnOpenSettings.addEventListener('click', () => {
+    settingsModal.classList.add('active');
+    SoundManager.playClack();
+  });
+}
+
+if (closeSettingsModal && settingsModal) {
+  closeSettingsModal.addEventListener('click', () => {
+    settingsModal.classList.remove('active');
+    SoundManager.playClack();
+  });
+}
+
+if (btnSaveSettings && settingsModal) {
+  btnSaveSettings.addEventListener('click', () => {
+    settingsModal.classList.remove('active');
+    SoundManager.playClack();
+  });
+}
 
 function sendLobbyChatMessage() {
   if (!lobbyChatInput) return;
@@ -712,6 +740,10 @@ socket.on('roomUpdate', (room) => {
       select.disabled = !isHost;
     });
 
+    if (btnSaveSettings) {
+      btnSaveSettings.textContent = isHost ? 'Confirmar' : 'Fechar';
+    }
+
     // Sincroniza os valores de configurações vindos do servidor
     if (room.settings) {
       document.getElementById('setting-meld').value = room.settings.minMeldPoints;
@@ -725,36 +757,69 @@ socket.on('roomUpdate', (room) => {
       addBotBtn.style.display = isHost ? 'inline-flex' : 'none';
     }
     
-    room.players.forEach(p => {
+    // Renderiza os 6 slots de jogadores da sala
+    for (let i = 0; i < 6; i++) {
+      const p = room.players[i];
       const li = document.createElement('li');
-      const botBadge = p.isBot ? ' <span class="badge bot-badge">IA</span>' : '';
-      const offlineBadge = p.isOffline ? ' <span class="badge offline-badge" style="background: var(--btn-danger); color: white; margin-left: 5px; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px;">Offline</span>' : '';
-      const removeButton = (isHost && p.isBot) ? `<button class="btn-remove-bot" onclick="socket.emit('removeBot', { botId: '${p.id}' })">Remover</button>` : '';
+      
+      if (p) {
+        // Slot Ocupado (Jogador Humano ou IA)
+        const botBadge = p.isBot ? ' <span class="badge bot-badge">IA</span>' : '';
+        const offlineBadge = p.isOffline ? ' <span class="badge offline-badge" style="background: var(--btn-danger); color: white; margin-left: 5px; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px;">Offline</span>' : '';
+        const removeButton = (isHost && p.isBot) ? `<button class="btn-remove-bot" onclick="socket.emit('removeBot', { botId: '${p.id}' })">Remover</button>` : '';
 
-      let nameHtml = `${p.name} ${p.id === myId ? '(Você)' : ''}${botBadge}${offlineBadge}`;
-      if (isHost && p.isBot) {
-        nameHtml += `
-          <select class="select-setting select-difficulty-bot" style="width: 100px; height: 26px; padding: 2px 6px; font-size: 0.75rem; margin-left: 10px; display: inline-block; border-radius: 4px;" onchange="socket.emit('changeBotDifficulty', { botId: '${p.id}', difficulty: this.value })">
-            <option value="easy" ${p.difficulty === 'easy' ? 'selected' : ''}>Fácil</option>
-            <option value="medium" ${p.difficulty === 'medium' ? 'selected' : ''}>Médio</option>
-            <option value="hard" ${p.difficulty === 'hard' ? 'selected' : ''}>Mestre</option>
-          </select>
+        let nameHtml = `${p.name} ${p.id === myId ? '(Você)' : ''}${botBadge}${offlineBadge}`;
+        if (isHost && p.isBot) {
+          nameHtml += `
+            <select class="select-setting select-difficulty-bot" style="width: 100px; height: 26px; padding: 2px 6px; font-size: 0.75rem; margin-left: 10px; display: inline-block; border-radius: 4px;" onchange="socket.emit('changeBotDifficulty', { botId: '${p.id}', difficulty: this.value })">
+              <option value="easy" ${p.difficulty === 'easy' ? 'selected' : ''}>Fácil</option>
+              <option value="medium" ${p.difficulty === 'medium' ? 'selected' : ''}>Médio</option>
+              <option value="hard" ${p.difficulty === 'hard' ? 'selected' : ''}>Mestre</option>
+            </select>
+          `;
+        } else if (p.isBot) {
+          const diffLabels = { easy: 'Fácil', medium: 'Médio', hard: 'Mestre' };
+          nameHtml += ` <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 5px;">(${diffLabels[p.difficulty] || 'Médio'})</span>`;
+        }
+
+        li.innerHTML = `
+          <div class="player-info">
+            <div class="player-avatar"></div>
+            <span>${nameHtml}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            ${p.host ? '<span class="badge">Host</span>' : ''}
+            ${removeButton}
+          </div>
         `;
-      } else if (p.isBot) {
-        const diffLabels = { easy: 'Fácil', medium: 'Médio', hard: 'Mestre' };
-        nameHtml += ` <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 5px;">(${diffLabels[p.difficulty] || 'Médio'})</span>`;
-      }
+      } else {
+        // Slot Vazio
+        li.className = 'empty-slot';
+        li.style.border = '1px dashed var(--bg-card-border)';
+        li.style.background = 'rgba(255, 255, 255, 0.01)';
+        li.style.padding = '12px 18px';
+        li.style.borderRadius = '8px';
+        li.style.display = 'flex';
+        li.style.alignItems = 'center';
+        li.style.justifyContent = 'center';
+        li.style.minHeight = '48px';
 
-      li.innerHTML = `
-        <div class="player-info">
-          <div class="player-avatar"></div>
-          <span>${nameHtml}</span>
-        </div>
-        ${p.host ? '<span class="badge">Host</span>' : ''}
-        ${removeButton}
-      `;
+        if (isHost) {
+          li.style.cursor = 'pointer';
+          li.style.color = 'var(--text-muted)';
+          li.style.fontSize = '0.85rem';
+          li.innerHTML = `<span style="font-weight: 600;">➕ Adicionar Jogador IA</span>`;
+          li.addEventListener('click', () => {
+            socket.emit('addBot');
+          });
+        } else {
+          li.style.color = 'var(--text-muted)';
+          li.style.fontSize = '0.85rem';
+          li.innerHTML = `<span>Aguardando Jogador...</span>`;
+        }
+      }
       playersList.appendChild(li);
-    });
+    }
 
     // Habilita botão de iniciar se for Host
     if (isHost) {
