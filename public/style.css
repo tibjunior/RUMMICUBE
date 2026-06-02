@@ -383,19 +383,6 @@ body {
 
 .players-list-container {
   margin-bottom: 20px;
-  flex: 1;
-  min-height: 120px;
-  overflow-y: auto;
-  padding-right: 5px;
-}
-
-.players-list-container::-webkit-scrollbar {
-  width: 4px;
-}
-
-.players-list-container::-webkit-scrollbar-thumb {
-  background: var(--bg-card-border);
-  border-radius: 2px;
 }
 
 .players-list-container h3 {
