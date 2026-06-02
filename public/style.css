@@ -24,12 +24,12 @@
   --tile-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
   --tile-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
   
-  --color-red: #d90429;
-  --color-blue: #0077b6;
-  --color-black: #111111;
-  --color-yellow: #f3722c; /* Amarelo/Laranja escuro para contraste */
-  --color-green: #2a9d8f;
-  --color-purple: #7209b7;
+  --color-red: #d00000;     /* Vermelho Escarlate Vivo */
+  --color-blue: #004bff;    /* Azul Royal Elétrico */
+  --color-black: #000000;   /* Preto Absoluto */
+  --color-yellow: #ff6a00;  /* Laranja Tangerina Vibrante (Amarelo de Rummikub) */
+  --color-green: #00a82d;   /* Verde Esmeralda Vivo */
+  --color-purple: #9b00e8;  /* Roxo Violeta Elétrico */
   
   /* Fontes */
   --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -805,7 +805,7 @@ body {
   background: var(--tile-bg);
   border: 1px solid var(--tile-border);
   border-radius: 6px;
-  box-shadow: var(--tile-shadow);
+  box-shadow: inset 1px 1px 1px rgba(255,255,255,0.9), inset -1px -1px 1px rgba(0,0,0,0.1), var(--tile-shadow);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -824,12 +824,12 @@ body {
 /* Destaque sutil se a peça acabou de ser jogada pelo jogador neste turno */
 .tile.new-play {
   border: 1.5px solid var(--primary);
-  box-shadow: 0 0 8px rgba(79, 70, 229, 0.5);
+  box-shadow: 0 0 8px rgba(79, 70, 229, 0.5), inset 1px 1px 1px rgba(255,255,255,0.9), inset -1px -1px 1px rgba(0,0,0,0.1);
 }
 
 .tile:hover {
   transform: translateY(-2px);
-  box-shadow: var(--tile-shadow-hover);
+  box-shadow: inset 1.5px 1.5px 1.5px rgba(255,255,255,0.95), inset -1.5px -1.5px 1.5px rgba(0,0,0,0.15), var(--tile-shadow-hover);
 }
 
 /* Valor numérico */
@@ -838,6 +838,7 @@ body {
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1;
+  text-shadow: 0.5px 0.5px 0px rgba(255, 255, 255, 0.6), -0.5px -0.5px 0.5px rgba(0, 0, 0, 0.35);
 }
 
 /* Pequeno ponto colorido embaixo do número */
