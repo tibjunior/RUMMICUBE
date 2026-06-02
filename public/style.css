@@ -1299,9 +1299,9 @@ body.theme-neon .tile {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 350px;
   padding-right: 5px;
   margin-bottom: 15px;
+  min-height: 0;
 }
 
 .lobby-chat-messages::-webkit-scrollbar {
@@ -1349,4 +1349,97 @@ body.theme-neon .tile {
   .lobby-chat-card {
     min-height: 300px;
   }
+}
+
+/* ==========================================================================
+   CONFIGURAÇÕES COLAPSÁVEIS E COMPACTAS DO LOBBY
+   ========================================================================== */
+.settings-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  width: 100%;
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  outline: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settings-toggle-btn span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-toggle-arrow {
+  transition: transform 0.3s ease;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.settings-toggle-btn.active .settings-toggle-arrow {
+  transform: rotate(180deg);
+}
+
+.lobby-settings-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-top 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+
+.lobby-settings-content.active {
+  max-height: 300px; /* Suficiente para caber a grade de opções */
+  margin-top: 15px;
+  opacity: 1;
+}
+
+/* ==========================================================================
+   DIVISOR E EMOJIS RÁPIDOS DO CHAT
+   ========================================================================== */
+.chat-divider {
+  height: 1px;
+  background: var(--bg-card-border);
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.chat-quick-emojis {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.emoji-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 8px;
+  font-size: 1.25rem;
+  padding: 6px;
+  flex: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.emoji-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.emoji-btn:active {
+  transform: translateY(0);
 }

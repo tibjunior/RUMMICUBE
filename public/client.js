@@ -1029,3 +1029,25 @@ socket.on('reaction', ({ senderName, emoji }) => {
     floating.remove();
   }, 2200);
 });
+
+// 5. Alternador do Painel de Configurações no Lobby
+const toggleSettingsBtn = document.getElementById('toggle-settings-btn');
+const lobbySettingsContent = document.getElementById('lobby-settings-content');
+
+if (toggleSettingsBtn && lobbySettingsContent) {
+  toggleSettingsBtn.addEventListener('click', () => {
+    const isActive = lobbySettingsContent.classList.toggle('active');
+    toggleSettingsBtn.classList.toggle('active');
+    SoundManager.playClack();
+  });
+}
+
+// 6. Envio de Emojis Rápidos nos Chats (Lobby e Jogo)
+document.querySelectorAll('.chat-quick-emojis .emoji-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const emoji = btn.dataset.emoji;
+    socket.emit('sendChat', { msg: emoji });
+    SoundManager.playClack();
+  });
+});
+

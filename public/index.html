@@ -70,43 +70,48 @@
 
           <!-- Painel de Configurações da Sala (Antes de Iniciar) -->
           <div class="lobby-settings-container">
-            <h3>Configurações da Partida</h3>
-            <div class="settings-grid">
-              <div class="setting-item">
-                <label for="setting-meld">Pontos do Meld Inicial</label>
-                <select id="setting-meld" class="select-setting">
-                  <option value="30">30 pontos (Padrão)</option>
-                  <option value="0">Sem Meld (0 pontos)</option>
-                  <option value="40">40 pontos</option>
-                  <option value="50">50 pontos</option>
-                </select>
-              </div>
-              
-              <div class="setting-item">
-                <label for="setting-duplicates">Permitir Conjuntos Idênticos</label>
-                <select id="setting-duplicates" class="select-setting">
-                  <option value="true">Sim (Padrão)</option>
-                  <option value="false">Não</option>
-                </select>
-              </div>
+            <button type="button" id="toggle-settings-btn" class="settings-toggle-btn">
+              <span>⚙️ Configurações da Partida</span>
+              <span id="settings-toggle-arrow" class="settings-toggle-arrow">▼</span>
+            </button>
+            <div id="lobby-settings-content" class="lobby-settings-content">
+              <div class="settings-grid">
+                <div class="setting-item">
+                  <label for="setting-meld">Pontos do Meld Inicial</label>
+                  <select id="setting-meld" class="select-setting">
+                    <option value="30">30 pontos (Padrão)</option>
+                    <option value="0">Sem Meld (0 pontos)</option>
+                    <option value="40">40 pontos</option>
+                    <option value="50">50 pontos</option>
+                  </select>
+                </div>
+                
+                <div class="setting-item">
+                  <label for="setting-duplicates">Permitir Conjuntos Idênticos</label>
+                  <select id="setting-duplicates" class="select-setting">
+                    <option value="true">Sim (Padrão)</option>
+                    <option value="false">Não</option>
+                  </select>
+                </div>
 
-              <div class="setting-item">
-                <label for="setting-timer">Tempo do Turno</label>
-                <select id="setting-timer" class="select-setting">
-                  <option value="60">60 segundos</option>
-                  <option value="90">90 segundos (Padrão)</option>
-                  <option value="120">120 segundos</option>
-                  <option value="0">Sem limite</option>
-                </select>
-              </div>
+                <div class="setting-item">
+                  <label for="setting-timer">Tempo do Turno</label>
+                  <select id="setting-timer" class="select-setting">
+                    <option value="60">60 segundos</option>
+                    <option value="90">90 segundos (Padrão)</option>
+                    <option value="120">120 segundos</option>
+                    <option value="0">Sem limite</option>
+                  </select>
+                </div>
 
-              <div class="setting-item">
-                <label for="setting-jokers">Máx Coringas p/ Conjunto</label>
-                <select id="setting-jokers" class="select-setting">
-                  <option value="0">Sem limite</option>
-                  <option value="1">No máximo 1</option>
-                  <option value="2">No máximo 2</option>
-                </select>
+                <div class="setting-item">
+                  <label for="setting-jokers">Máx Coringas p/ Conjunto</label>
+                  <select id="setting-jokers" class="select-setting">
+                    <option value="0">Sem limite</option>
+                    <option value="1">No máximo 1</option>
+                    <option value="2">No máximo 2</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -129,6 +134,15 @@
           </div>
           <div id="lobby-chat-messages" class="lobby-chat-messages">
             <!-- Mensagens do chat serão inseridas aqui -->
+          </div>
+          <div class="chat-divider"></div>
+          <div class="chat-quick-emojis">
+            <button type="button" class="emoji-btn" data-emoji="😂">😂</button>
+            <button type="button" class="emoji-btn" data-emoji="😎">😎</button>
+            <button type="button" class="emoji-btn" data-emoji="🤔">🤔</button>
+            <button type="button" class="emoji-btn" data-emoji="😱">😱</button>
+            <button type="button" class="emoji-btn" data-emoji="😢">😢</button>
+            <button type="button" class="emoji-btn" data-emoji="😡">😡</button>
           </div>
           <div class="lobby-chat-input-group">
             <input type="text" id="lobby-chat-input" placeholder="Apimente o jogo aqui..." autocomplete="off" maxlength="60">
@@ -207,6 +221,15 @@
               <h3>Chat da Sala</h3>
               <div id="chat-messages" class="logs-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 5px; background: rgba(0,0,0,0.15); border-radius: 6px; margin-bottom: 8px; font-size: 0.8rem;">
                 <!-- Mensagens do chat -->
+              </div>
+              <div class="chat-divider" style="margin-bottom: 8px;"></div>
+              <div class="chat-quick-emojis" style="margin-bottom: 8px;">
+                <button type="button" class="emoji-btn" data-emoji="😂">😂</button>
+                <button type="button" class="emoji-btn" data-emoji="😎">😎</button>
+                <button type="button" class="emoji-btn" data-emoji="🤔">🤔</button>
+                <button type="button" class="emoji-btn" data-emoji="😱">😱</button>
+                <button type="button" class="emoji-btn" data-emoji="😢">😢</button>
+                <button type="button" class="emoji-btn" data-emoji="😡">😡</button>
               </div>
               <div class="chat-input-wrapper" style="display: flex; gap: 6px;">
                 <input type="text" id="chat-input" placeholder="Mensagem..." autocomplete="off" maxlength="60" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--bg-card-border); color: white;">
