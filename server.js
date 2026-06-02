@@ -267,7 +267,8 @@ function broadcastRoomUpdate(room) {
         meldCompleted: room.meldStatus.get(p.id) || false,
         isActive: room.players[room.currentTurnIndex]?.id === p.id,
         isBot: p.isBot || false,
-        difficulty: p.difficulty || 'medium'
+        difficulty: p.difficulty || 'medium',
+        isOffline: !p.isBot && !p.socketId
       })),
       myRack: player.rack, // Apenas as suas próprias peças!
       tunnelUrl: tunnelUrl,
@@ -957,6 +958,31 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Permite reconexão se um jogador com o mesmo nome já estava na sala
+    const existingPlayer = room.players.find(p => p.name === playerName);
+    if (existingPlayer) {
+      console.log(`[Reconexão] Jogador ${playerName} reconectou. Atualizando socketId de ${existingPlayer.socketId} para ${socket.id}`);
+      
+      // Transfere pontuações e meldStatus se existirem
+      if (room.scores && room.scores.has(existingPlayer.id)) {
+        const score = room.scores.get(existingPlayer.id);
+        room.scores.delete(existingPlayer.id);
+        room.scores.set(socket.id, score);
+      }
+      if (room.meldStatus && room.meldStatus.has(existingPlayer.id)) {
+        const meld = room.meldStatus.get(existingPlayer.id);
+        room.meldStatus.delete(existingPlayer.id);
+        room.meldStatus.set(socket.id, meld);
+      }
+
+      existingPlayer.id = socket.id;
+      existingPlayer.socketId = socket.id;
+
+      socket.join(code);
+      broadcastRoomUpdate(room);
+      return;
+    }
+
     if (room.gameStarted) {
       socket.emit('errorMsg', 'O jogo nesta sala já começou.');
       return;
@@ -1382,70 +1408,82 @@ io.on('connection', (socket) => {
     for (const [code, room] of rooms.entries()) {
       const idx = room.players.findIndex(p => p.socketId === socket.id);
       if (idx !== -1) {
-        const wasHost = room.players[idx].host;
-        const playerName = room.players[idx].name;
+        const player = room.players[idx];
+        const playerName = player.name;
         
-        room.players.splice(idx, 1);
-        room.meldStatus.delete(socket.id);
-        room.scores.delete(socket.id);
+        // Em vez de remover imediatamente, marca como desconectado (socketId = null)
+        // e inicia tolerância de 25 segundos para reconexão.
+        player.socketId = null;
+        broadcastRoomUpdate(room);
+        io.to(code).emit('infoMsg', `${playerName} perdeu a conexão. Aguardando reconexão...`);
 
-        if (room.players.length === 0) {
-          // Excluir sala se vazia
-          if (room.turnTimer) {
-            clearTimeout(room.turnTimer);
-          }
-          rooms.delete(code);
-        } else {
-          // Se o host saiu, repassa o host para o primeiro jogador humano da lista
-          if (wasHost) {
-            const firstHuman = room.players.find(p => !p.isBot);
-            if (firstHuman) {
-              firstHuman.host = true;
-            }
-          }
+        setTimeout(() => {
+          // Busca o jogador pelo nome novamente para verificar se ele continua desconectado (socketId ainda null)
+          const pIdx = room.players.findIndex(p => p.name === playerName);
+          if (pIdx !== -1 && room.players[pIdx].socketId === null) {
+            console.log(`[Desconexão Permanente] Tolerância excedida. Removendo ${playerName} da sala.`);
+            const wasHost = room.players[pIdx].host;
+            
+            room.players.splice(pIdx, 1);
+            room.meldStatus.delete(socket.id);
+            room.scores.delete(socket.id);
 
-          // Se o jogo estava rodando e o jogador cujo turno era o atual saiu
-          if (room.gameStarted) {
-            // Se sobrar apenas 1 jogador, encerra o jogo por W.O.
-            if (room.players.length < 2) {
+            if (room.players.length === 0) {
+              // Excluir sala se vazia
               if (room.turnTimer) {
                 clearTimeout(room.turnTimer);
-                room.turnTimer = null;
-                room.turnExpiresAt = null;
               }
-              room.gameStarted = false;
-              io.to(room.id).emit('infoMsg', 'Jogadores insuficientes. O jogo foi encerrado.');
+              rooms.delete(code);
             } else {
-              // Limpar o timer e recalcular turno se quem saiu era o jogador atual
-              const wasActivePlayerTurn = room.currentTurnIndex === idx;
-              if (wasActivePlayerTurn) {
-                if (room.turnTimer) {
-                  clearTimeout(room.turnTimer);
-                }
-                
-                if (room.currentTurnIndex >= room.players.length) {
-                  room.currentTurnIndex = 0;
-                }
-                
-                room.initialBoardState = JSON.stringify(room.board);
-                room.initialRacks = new Map();
-                room.players.forEach(p => {
-                  room.initialRacks.set(p.id, JSON.stringify(p.rack));
-                });
-                
-                startTurnTimer(room);
-              } else {
-                // Se saiu outro jogador, ajustamos o índice do turno caso ele seja maior que a nova quantidade
-                if (room.currentTurnIndex >= room.players.length) {
-                  room.currentTurnIndex = 0;
+              // Se o host saiu, repassa o host para o primeiro jogador humano da lista
+              if (wasHost) {
+                const firstHuman = room.players.find(p => !p.isBot);
+                if (firstHuman) {
+                  firstHuman.host = true;
                 }
               }
+
+              // Se o jogo estava rodando e o jogador cujo turno era o atual saiu
+              if (room.gameStarted) {
+                const humanPlayers = room.players.filter(p => !p.isBot);
+                if (humanPlayers.length === 0) {
+                  // Se não sobrou nenhum humano na partida
+                  if (room.turnTimer) {
+                    clearTimeout(room.turnTimer);
+                    room.turnTimer = null;
+                    room.turnExpiresAt = null;
+                  }
+                  room.gameStarted = false;
+                  io.to(room.id).emit('infoMsg', 'Jogadores insuficientes na partida. O jogo foi encerrado.');
+                } else {
+                  // Se o jogador desconectado de vez era o jogador do turno atual
+                  const wasActivePlayerTurn = room.currentTurnIndex === pIdx;
+                  if (wasActivePlayerTurn) {
+                    if (room.turnTimer) {
+                      clearTimeout(room.turnTimer);
+                    }
+                    if (room.currentTurnIndex >= room.players.length) {
+                      room.currentTurnIndex = 0;
+                    }
+                    room.initialBoardState = JSON.stringify(room.board);
+                    room.initialRacks = new Map();
+                    room.players.forEach(p => {
+                      room.initialRacks.set(p.id, JSON.stringify(p.rack));
+                    });
+                    startTurnTimer(room);
+                  } else {
+                    if (room.currentTurnIndex >= room.players.length) {
+                      room.currentTurnIndex = 0;
+                    }
+                  }
+                }
+              }
+
+              broadcastRoomUpdate(room);
+              io.to(code).emit('infoMsg', `${playerName} saiu do jogo de forma permanente.`);
             }
           }
-
-          broadcastRoomUpdate(room);
-          io.to(code).emit('infoMsg', `${playerName} saiu do jogo.`);
-        }
+        }, 25000); // 25 segundos de tolerância
         break;
       }
     }

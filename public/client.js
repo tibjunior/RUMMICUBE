@@ -358,6 +358,15 @@ const btnLobbyExit = document.getElementById('btn-lobby-exit');
 socket.on('connect', () => {
   myId = socket.id;
   console.log(`Conectado ao servidor. Meu ID: ${myId}`);
+  
+  // Reconexão automática em caso de queda de rede
+  if (roomCode) {
+    const name = usernameInput ? usernameInput.value.trim() : null;
+    if (name) {
+      console.log(`Tentando reconectar à sala ${roomCode}...`);
+      socket.emit('joinRoom', { roomCode: roomCode, playerName: name });
+    }
+  }
 });
 
 /* ==========================================================================
@@ -594,9 +603,10 @@ socket.on('roomUpdate', (room) => {
     room.players.forEach(p => {
       const li = document.createElement('li');
       const botBadge = p.isBot ? ' <span class="badge bot-badge">IA</span>' : '';
+      const offlineBadge = p.isOffline ? ' <span class="badge offline-badge" style="background: var(--btn-danger); color: white; margin-left: 5px; font-size: 0.65rem; padding: 2px 4px; border-radius: 4px;">Offline</span>' : '';
       const removeButton = (isHost && p.isBot) ? `<button class="btn-remove-bot" onclick="socket.emit('removeBot', { botId: '${p.id}' })">Remover</button>` : '';
 
-      let nameHtml = `${p.name} ${p.id === myId ? '(Você)' : ''}${botBadge}`;
+      let nameHtml = `${p.name} ${p.id === myId ? '(Você)' : ''}${botBadge}${offlineBadge}`;
       if (isHost && p.isBot) {
         nameHtml += `
           <select class="select-setting select-difficulty-bot" style="width: 100px; height: 26px; padding: 2px 6px; font-size: 0.75rem; margin-left: 10px; display: inline-block; border-radius: 4px;" onchange="socket.emit('changeBotDifficulty', { botId: '${p.id}', difficulty: this.value })">
@@ -668,10 +678,11 @@ socket.on('roomUpdate', (room) => {
       if (p.isActive) li.className = 'active';
       
       const botBadge = p.isBot ? ' <span class="badge bot-badge" style="margin-left: 5px; font-size: 0.65rem; padding: 2px 4px;">IA</span>' : '';
+      const offlineBadge = p.isOffline ? ' <span class="badge offline-badge" style="background: var(--btn-danger); color: white; margin-left: 5px; font-size: 0.65rem; padding: 2px 4px;">Offline</span>' : '';
       
       li.innerHTML = `
         <div class="sb-player-top">
-          <span class="sb-name">${p.name} ${p.id === myId ? '(Você)' : ''}${botBadge}</span>
+          <span class="sb-name">${p.name} ${p.id === myId ? '(Você)' : ''}${botBadge}${offlineBadge}</span>
           <span class="sb-tiles">${p.tileCount} peças</span>
         </div>
         <div class="sb-status">
