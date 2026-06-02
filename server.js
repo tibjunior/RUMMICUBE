@@ -20,6 +20,11 @@ const io = new Server(httpServer, {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Rota de Keep-Alive para evitar que a Render desligue o servidor por inatividade
+app.get('/ping', (req, res) => {
+  res.send('pong');
+});
+
 // Estado Global
 const rooms = new Map();
 

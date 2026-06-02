@@ -187,6 +187,7 @@ const SoundManager = {
 // ESTADO GLOBAL DO CLIENTE
 let myId = null;
 let roomCode = null;
+let myPlayerName = null;
 let isMyTurn = false;
 let gameStarted = false;
 let turnExpiresAt = null;
@@ -360,13 +361,15 @@ socket.on('connect', () => {
   console.log(`Conectado ao servidor. Meu ID: ${myId}`);
   
   // Reconexão automática em caso de queda de rede
-  if (roomCode) {
-    const name = usernameInput ? usernameInput.value.trim() : null;
-    if (name) {
-      console.log(`Tentando reconectar à sala ${roomCode}...`);
-      socket.emit('joinRoom', { roomCode: roomCode, playerName: name });
-    }
+  if (roomCode && myPlayerName) {
+    console.log(`Tentando reconectar à sala ${roomCode}...`);
+    socket.emit('joinRoom', { roomCode: roomCode, playerName: myPlayerName });
   }
+});
+
+socket.on('disconnect', (reason) => {
+  console.warn(`Desconectado do servidor. Motivo: ${reason}`);
+  showToast('Conexão perdida com o servidor. Tentando reconectar...', 'warning');
 });
 
 /* ==========================================================================
@@ -413,6 +416,7 @@ createRoomBtn.addEventListener('click', () => {
     showToast('Por favor, digite seu nome.', 'warning');
     return;
   }
+  myPlayerName = name;
   socket.emit('createRoom', { playerName: name });
 });
 
@@ -427,6 +431,7 @@ joinRoomBtn.addEventListener('click', () => {
     showToast('Por favor, digite um código de sala válido (4 letras).', 'warning');
     return;
   }
+  myPlayerName = name;
   socket.emit('joinRoom', { roomCode: code, playerName: name });
 });
 
@@ -1377,4 +1382,12 @@ document.querySelectorAll('.chat-quick-emojis .emoji-btn').forEach(btn => {
     SoundManager.playClack();
   });
 });
+
+// Loop Keep-Alive para evitar suspensão por inatividade na Render (a cada 2 minutos)
+setInterval(() => {
+  fetch('/ping')
+    .then(res => res.text())
+    .then(txt => console.log(`Keep-alive ping: ${txt}`))
+    .catch(err => console.warn('Falha no ping Keep-alive:', err));
+}, 2 * 60 * 1000);
 
