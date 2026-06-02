@@ -264,7 +264,8 @@ function broadcastRoomUpdate(room) {
         tileCount: p.rack.length,
         meldCompleted: room.meldStatus.get(p.id) || false,
         isActive: room.players[room.currentTurnIndex]?.id === p.id,
-        isBot: p.isBot || false
+        isBot: p.isBot || false,
+        difficulty: p.difficulty || 'medium'
       })),
       myRack: player.rack, // Apenas as suas próprias peças!
       tunnelUrl: tunnelUrl,
