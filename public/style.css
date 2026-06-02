@@ -534,8 +534,9 @@ body {
 #game-screen {
   display: none;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   padding: 15px;
+  overflow: hidden;
 }
 
 #game-screen.active {
@@ -1508,4 +1509,135 @@ body.theme-neon .tile {
 
 .emoji-btn:active {
   transform: translateY(0);
+}
+
+/* ==========================================================================
+   MELHORIA DE RESPONSIVIDADE PARA TELAS DE ALTURA REDUZIDA (SEM ROLAGEM)
+   ========================================================================== */
+@media (max-height: 900px) {
+  #game-screen {
+    padding: 8px 12px;
+  }
+  .game-header {
+    padding: 8px 15px;
+    margin-bottom: 8px;
+  }
+  .board-wrapper, .rack-wrapper {
+    padding: 10px 14px;
+  }
+  .action-bar {
+    padding: 6px;
+  }
+  .board-grid {
+    grid-template-rows: repeat(12, 46px);
+    grid-template-columns: repeat(25, 36px);
+  }
+  .rack-grid {
+    grid-template-rows: repeat(2, 46px);
+    grid-template-columns: repeat(20, 36px);
+    min-height: 110px;
+  }
+  .tile {
+    width: 32px;
+    height: 40px;
+    border-radius: 5px;
+    padding: 3px 2px;
+  }
+  .tile-value {
+    font-size: 1.05rem;
+  }
+  .tile-dot {
+    width: 5px;
+    height: 5px;
+  }
+  .tile.joker .tile-value {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-height: 750px) {
+  #game-screen {
+    padding: 5px 10px;
+  }
+  .game-header {
+    padding: 5px 12px;
+    margin-bottom: 5px;
+  }
+  .logo-small h2 {
+    font-size: 1.1rem;
+  }
+  .info-pill {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+  .board-wrapper, .rack-wrapper {
+    padding: 8px 12px;
+  }
+  .action-bar {
+    padding: 4px;
+    gap: 5px;
+  }
+  .action-bar .btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  .main-action .btn {
+    padding: 8px 18px;
+    font-size: 0.85rem;
+  }
+  .board-grid {
+    grid-template-rows: repeat(12, 38px);
+    grid-template-columns: repeat(25, 30px);
+  }
+  .rack-grid {
+    grid-template-rows: repeat(2, 38px);
+    grid-template-columns: repeat(20, 30px);
+    min-height: 94px;
+  }
+  .tile {
+    width: 26px;
+    height: 32px;
+    border-radius: 4px;
+    padding: 2px 1px;
+  }
+  .tile-value {
+    font-size: 0.85rem;
+    text-shadow: 0.5px 0.5px 0px rgba(255, 255, 255, 0.6), -0.5px -0.5px 0.5px rgba(0, 0, 0, 0.35);
+  }
+  .tile-dot {
+    width: 4px;
+    height: 4px;
+  }
+  .tile.joker .tile-value {
+    font-size: 0.8rem;
+  }
+  .board-title, .rack-title {
+    font-size: 0.75rem;
+    margin-bottom: 5px;
+  }
+  #scoreboard-list li {
+    padding: 6px 10px;
+    gap: 2px;
+  }
+  .sb-name {
+    font-size: 0.85rem;
+  }
+  .sb-tiles {
+    padding: 1px 6px;
+    font-size: 0.7rem;
+  }
+  .sb-status {
+    font-size: 0.65rem;
+  }
+  .logs-container {
+    max-height: 120px;
+  }
+  .sidebar-box {
+    padding: 10px;
+  }
+  .sidebar-box h3 {
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+  }
 }
