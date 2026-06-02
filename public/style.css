@@ -382,7 +382,20 @@ body {
 }
 
 .players-list-container {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.players-list-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.players-list-container::-webkit-scrollbar-thumb {
+  background: var(--bg-card-border);
+  border-radius: 2px;
 }
 
 .players-list-container h3 {
@@ -1391,6 +1404,9 @@ body.theme-neon .tile {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   text-align: left;
+  height: 580px;
+  display: flex;
+  flex-direction: column;
 }
 
 .lobby-chat-card {
@@ -1403,8 +1419,7 @@ body.theme-neon .tile {
   backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
-  height: auto;
-  min-height: 480px;
+  height: 580px;
 }
 
 .lobby-chat-header {
@@ -1497,8 +1512,12 @@ body.theme-neon .tile {
     flex-direction: column;
     max-width: 550px;
   }
+  .lobby-card {
+    height: auto;
+    max-height: 580px;
+  }
   .lobby-chat-card {
-    min-height: 300px;
+    height: 480px;
   }
 }
 
