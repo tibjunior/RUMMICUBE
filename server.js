@@ -980,6 +980,11 @@ io.on('connection', (socket) => {
         room.meldStatus.delete(existingPlayer.id);
         room.meldStatus.set(socket.id, meld);
       }
+      if (room.initialRacks && room.initialRacks.has(existingPlayer.id)) {
+        const initialRack = room.initialRacks.get(existingPlayer.id);
+        room.initialRacks.delete(existingPlayer.id);
+        room.initialRacks.set(socket.id, initialRack);
+      }
 
       existingPlayer.id = socket.id;
       existingPlayer.socketId = socket.id;
@@ -1433,6 +1438,9 @@ io.on('connection', (socket) => {
             room.players.splice(pIdx, 1);
             room.meldStatus.delete(socket.id);
             room.scores.delete(socket.id);
+            if (room.initialRacks) {
+              room.initialRacks.delete(socket.id);
+            }
 
             if (room.players.length === 0) {
               // Excluir sala se vazia
