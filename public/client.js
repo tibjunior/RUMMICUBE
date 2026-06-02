@@ -180,6 +180,31 @@ const SoundManager = {
       osc.start(now + idx * 0.09);
       osc.stop(now + idx * 0.09 + dur);
     });
+  },
+
+  playTurnChange() {
+    this.init();
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+    const now = this.ctx.currentTime;
+    
+    // Som agradável de mudança de turno (dois tons suaves harmoniosos: E5 depois G5)
+    const notes = [659.25, 783.99]; // E5, G5
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+      
+      gain.gain.setValueAtTime(0.12, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.15);
+      
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 0.15);
+    });
   }
 };
 
@@ -203,7 +228,10 @@ const RACK_ROWS = 2;
 const RACK_COLS = 20;
 
 let boardState = Array(BOARD_ROWS).fill(null).map(() => Array(BOARD_COLS).fill(null));
+let initialBoardState = null;
 let rackState = Array(RACK_ROWS).fill(null).map(() => Array(RACK_COLS).fill(null));
+let activePlayerId = null;
+let myMeldCompleted = false;
 
 // Rastreamento de arrasto
 let draggedTile = null; // Guarda a peça sendo arrastada { tile, source, row, col }
@@ -309,6 +337,84 @@ function validateLocalBoard() {
   }
 
   return invalidTileIds;
+}
+
+// Retorna o valor real de uma peça em seu conjunto (calculando o valor do coringa)
+function getTilePoints(item, segment, isRun) {
+  if (!item.tile.isJoker) return item.tile.value;
+
+  if (isRun) {
+    const firstNonJokerIdx = segment.findIndex(x => !x.tile.isJoker);
+    if (firstNonJokerIdx === -1) return 0;
+    const baseValue = segment[firstNonJokerIdx].tile.value;
+    const itemIndex = segment.indexOf(item);
+    return baseValue - firstNonJokerIdx + itemIndex;
+  } else {
+    const nonJoker = segment.find(x => !x.tile.isJoker);
+    return nonJoker ? nonJoker.tile.value : 0;
+  }
+}
+
+// Calcula em tempo real a pontuação dos novos conjuntos colocados na mesa
+function calculateCurrentMeldPoints() {
+  if (!initialBoardState) return 0;
+  
+  const segments = getBoardSegments(boardState);
+  let totalPoints = 0;
+
+  for (const segment of segments) {
+    // Verifica se o segmento contém novas peças
+    const hasNewTiles = segment.some(item => {
+      const initTile = initialBoardState[item.r][item.c];
+      return initTile === null;
+    });
+
+    if (hasNewTiles) {
+      // No Meld Inicial, o segmento deve conter APENAS peças novas
+      const hasOldTiles = segment.some(item => {
+        const initTile = initialBoardState[item.r][item.c];
+        return initTile !== null;
+      });
+
+      if (hasOldTiles) {
+        continue;
+      }
+
+      if (segment.length < 3) continue;
+
+      const isG = checkGroup(segment);
+      const isR = checkRun(segment);
+      if (!isG && !isR) continue;
+
+      if (currentSettings && currentSettings.maxJokersPerSet > 0) {
+        const jokerCount = segment.filter(item => item.tile.isJoker).length;
+        if (jokerCount > currentSettings.maxJokersPerSet) continue;
+      }
+
+      let segmentPoints = 0;
+      segment.forEach(item => {
+        segmentPoints += getTilePoints(item, segment, isR);
+      });
+      totalPoints += segmentPoints;
+    }
+  }
+
+  return totalPoints;
+}
+
+// Verifica se o jogador colocou pelo menos uma peça nova do seu rack no tabuleiro neste turno
+function hasPlacedNewTiles() {
+  if (!initialBoardState) return false;
+  for (let r = 0; r < BOARD_ROWS; r++) {
+    for (let c = 0; c < BOARD_COLS; c++) {
+      const initTile = initialBoardState[r][c];
+      const currentTile = boardState[r][c];
+      if (initTile === null && currentTile !== null) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 // ELEMENTOS DO DOM
@@ -420,6 +526,13 @@ createRoomBtn.addEventListener('click', () => {
   socket.emit('createRoom', { playerName: name });
 });
 
+usernameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    createRoomBtn.click();
+  }
+});
+
 joinRoomBtn.addEventListener('click', () => {
   const name = usernameInput.value.trim();
   const code = roomCodeInput.value.trim().toUpperCase();
@@ -433,6 +546,13 @@ joinRoomBtn.addEventListener('click', () => {
   }
   myPlayerName = name;
   socket.emit('joinRoom', { roomCode: code, playerName: name });
+});
+
+roomCodeInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    joinRoomBtn.click();
+  }
 });
 
 startBtn.addEventListener('click', () => {
@@ -654,6 +774,7 @@ socket.on('roomUpdate', (room) => {
     // Ajusta visualização do botão Sair/Voltar com base em se somos o host
     const me = room.players.find(p => p.id === myId);
     const isHost = me && me.host;
+    myMeldCompleted = me ? me.meldCompleted : false;
     if (isHost) {
       btnLobbyExit.textContent = 'Voltar para o Lobby';
       btnLobbyExit.className = 'btn danger font-bold';
@@ -702,12 +823,18 @@ socket.on('roomUpdate', (room) => {
 
     // Se mudou o turno, avisa por log
     const activeName = activePlayer ? (activePlayer.id === myId ? 'Seu turno!' : `Turno de ${activePlayer.name}`) : '';
-    if (isMyTurn) {
-      showToast('É o seu turno!', 'success');
+    const newActivePlayerId = activePlayer ? activePlayer.id : null;
+    if (newActivePlayerId && newActivePlayerId !== activePlayerId) {
+      activePlayerId = newActivePlayerId;
+      SoundManager.playTurnChange();
+      if (isMyTurn) {
+        showToast('É o seu turno!', 'success');
+      }
     }
 
     // Sincroniza a mesa comum
     boardState = room.board;
+    initialBoardState = room.initialBoard;
     renderBoard();
 
     // Sincroniza o rack privado
@@ -1028,6 +1155,43 @@ function renderBoard() {
       }
 
       gameBoard.appendChild(cell);
+    }
+  }
+
+  // Atualiza os estados dos botões baseados nas jogadas atuais
+  if (isMyTurn) {
+    const placedNew = hasPlacedNewTiles();
+    const boardIsValid = (invalidTileIds.size === 0);
+    btnDraw.disabled = (placedNew && boardIsValid);
+  } else {
+    btnDraw.disabled = true;
+  }
+
+  // Atualiza o contador de pontos do Meld Inicial se o jogador ainda não concluiu o meld
+  const meldCounterEl = document.getElementById('meld-points-counter');
+  if (meldCounterEl) {
+    if (isMyTurn && !myMeldCompleted) {
+      meldCounterEl.style.display = 'inline-flex';
+      const currentPoints = calculateCurrentMeldPoints();
+      const minMeld = (currentSettings && currentSettings.minMeldPoints) !== undefined ? currentSettings.minMeldPoints : 30;
+      
+      const valEl = document.getElementById('meld-points-val');
+      if (valEl) {
+        valEl.textContent = currentPoints;
+      }
+      
+      const targetEl = document.getElementById('meld-points-target');
+      if (targetEl) {
+        targetEl.textContent = minMeld;
+      }
+      
+      if (currentPoints >= minMeld) {
+        meldCounterEl.style.backgroundColor = 'var(--btn-success)';
+      } else {
+        meldCounterEl.style.backgroundColor = 'var(--btn-warning)';
+      }
+    } else {
+      meldCounterEl.style.display = 'none';
     }
   }
 }

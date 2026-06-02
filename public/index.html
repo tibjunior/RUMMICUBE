@@ -255,7 +255,12 @@
         <div class="board-area">
           <!-- A MESA (Tabuleiro Comum) -->
           <div class="board-wrapper" style="position: relative;">
-            <div class="board-title">Mesa Comum (Arraste as peças aqui)</div>
+            <div class="board-title" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <span>Mesa Comum (Arraste as peças aqui)</span>
+              <span id="meld-points-counter" style="display: none; align-items: center; gap: 4px; background: var(--btn-warning); color: black; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; transition: background-color 0.2s ease;">
+                Pontos do Turno (Meld): <span id="meld-points-val">0</span>/<span id="meld-points-target">30</span>
+              </span>
+            </div>
             <div id="emoji-floating-area" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 100;"></div>
             <div id="game-board" class="tiles-grid board-grid">
               <!-- Grade de 12x25 gerada pelo client.js -->

@@ -1442,13 +1442,26 @@ body.theme-neon .tile {
   min-height: 0;
 }
 
-.lobby-chat-messages::-webkit-scrollbar {
-  width: 4px;
+.lobby-chat-messages::-webkit-scrollbar,
+.logs-container::-webkit-scrollbar,
+#chat-messages::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  display: block;
 }
 
-.lobby-chat-messages::-webkit-scrollbar-thumb {
-  background: var(--bg-card-border);
-  border-radius: 2px;
+.lobby-chat-messages::-webkit-scrollbar-thumb,
+.logs-container::-webkit-scrollbar-thumb,
+#chat-messages::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 3px;
+}
+
+.lobby-chat-messages::-webkit-scrollbar-track,
+.logs-container::-webkit-scrollbar-track,
+#chat-messages::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
 }
 
 .lobby-chat-input-group {

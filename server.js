@@ -262,6 +262,7 @@ function broadcastRoomUpdate(room) {
       roomCode: room.id,
       gameStarted: room.gameStarted,
       board: room.board,
+      initialBoard: room.initialBoardState ? JSON.parse(room.initialBoardState) : null,
       currentTurnIndex: room.currentTurnIndex,
       poolCount: room.pool.length,
       players: room.players.map(p => ({
