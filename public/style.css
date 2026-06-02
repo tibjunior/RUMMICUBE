@@ -827,6 +827,25 @@ body {
   box-shadow: 0 0 8px rgba(79, 70, 229, 0.5), inset 1px 1px 1px rgba(255,255,255,0.9), inset -1px -1px 1px rgba(0,0,0,0.1);
 }
 
+/* Assistente de Validação Visual: Peça pertencente a um conjunto inválido na mesa */
+.tile.invalid-set {
+  border: 1.5px dashed var(--btn-danger) !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.7), inset 1px 1px 1px rgba(255,255,255,0.9), inset -1px -1px 1px rgba(0,0,0,0.1) !important;
+  animation: pulseInvalid 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseInvalid {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.5); box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); }
+  50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 12px rgba(239, 68, 68, 0.8); }
+}
+
+/* Clique para Mover: Peça selecionada pelo toque */
+.tile.selected-tap {
+  border: 2px solid var(--btn-info) !important;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.8), inset 1px 1px 1px rgba(255,255,255,0.9), inset -1px -1px 1px rgba(0,0,0,0.1) !important;
+  transform: translateY(-4px) scale(1.05);
+}
+
 .tile:hover {
   transform: translateY(-2px);
   box-shadow: inset 1.5px 1.5px 1.5px rgba(255,255,255,0.95), inset -1.5px -1.5px 1.5px rgba(0,0,0,0.15), var(--tile-shadow-hover);
@@ -938,11 +957,11 @@ body {
 .overlay-card {
   background: var(--bg-card);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 40px;
+  padding: 30px 40px;
   border-radius: 20px;
   text-align: center;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-  max-width: 400px;
+  max-width: 500px;
   width: 90%;
   animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -956,13 +975,65 @@ body {
   font-family: var(--font-display);
   font-size: 2.2rem;
   color: #34d399;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .overlay-card p {
   color: var(--text-main);
   font-size: 1.1rem;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+}
+
+/* Placar de Fim de Jogo (Tabela Oficial de Pontuação) */
+.scoreboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0 25px 0;
+  font-size: 0.9rem;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--bg-card-border);
+}
+
+.scoreboard-table th, .scoreboard-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.scoreboard-table th {
+  background: rgba(79, 70, 229, 0.25);
+  color: #a5b4fc;
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.scoreboard-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.scoreboard-table tr:last-child td {
+  border-bottom: none;
+}
+
+.scoreboard-table td.points-round {
+  font-weight: 700;
+}
+
+.scoreboard-table td.points-accumulated {
+  font-weight: 700;
+}
+
+.points-positive {
+  color: #34d399;
+}
+
+.points-negative {
+  color: #f87171;
 }
 
 .overlay-card .btn {

@@ -69,27 +69,34 @@ const SoundManager = {
     this.init();
     if (!this.ctx || this.ctx.state === 'suspended') return;
 
-    const osc1 = this.ctx.createOscillator();
-    const osc2 = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const now = this.ctx.currentTime;
+    
+    // Alerta de Erro (Buzz) - Baixa frequencia dupla decrescente
+    [0, 0.12].forEach((delay) => {
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
 
-    osc1.type = 'sawtooth';
-    osc1.frequency.setValueAtTime(115, this.ctx.currentTime);
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(100, now + delay);
+      osc1.frequency.linearRampToValueAtTime(60, now + delay + 0.1);
 
-    osc2.type = 'sawtooth';
-    osc2.frequency.setValueAtTime(118, this.ctx.currentTime);
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(103, now + delay);
+      osc2.frequency.linearRampToValueAtTime(63, now + delay + 0.1);
 
-    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+      gain.gain.setValueAtTime(0.2, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.1);
 
-    osc1.connect(gain);
-    osc2.connect(gain);
-    gain.connect(this.ctx.destination);
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.ctx.destination);
 
-    osc1.start();
-    osc2.start();
-    osc1.stop(this.ctx.currentTime + 0.28);
-    osc2.stop(this.ctx.currentTime + 0.28);
+      osc1.start(now + delay);
+      osc2.start(now + delay);
+      osc1.stop(now + delay + 0.1);
+      osc2.stop(now + delay + 0.1);
+    });
   },
 
   playTick() {
@@ -99,17 +106,43 @@ const SoundManager = {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
+    // Tic-tac ritmico critico de alta frequencia
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(750, this.ctx.currentTime);
+    osc.frequency.setValueAtTime(950, this.ctx.currentTime);
 
-    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.025);
+    gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
 
     osc.start();
-    osc.stop(this.ctx.currentTime + 0.025);
+    osc.stop(this.ctx.currentTime + 0.03);
+  },
+
+  playMeldSuccess() {
+    this.init();
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+
+    const now = this.ctx.currentTime;
+    // Fanfarra de Sucesso (Meld Aceito): Triade maior rapida ascendente (C4, E4, G4, C5)
+    const freqs = [261.63, 329.63, 392.00, 523.25];
+    freqs.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+
+      gain.gain.setValueAtTime(0.18, now + idx * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.07 + 0.18);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now + idx * 0.07);
+      osc.stop(now + idx * 0.07 + 0.18);
+    });
   },
 
   playVictory() {
@@ -117,22 +150,35 @@ const SoundManager = {
     if (!this.ctx || this.ctx.state === 'suspended') return;
 
     const now = this.ctx.currentTime;
-    const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+    
+    // Melodia de Fim de Jogo: Arpejos ascendentes e descendentes com sustain
+    const notes = [
+      261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50, // Ascendente
+      783.99, 659.25, 523.25, 392.00, 329.63, 261.63,          // Descendente
+      392.00, 523.25, 1046.50                                  // Acorde final
+    ];
+    
     notes.forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
 
-      osc.type = 'triangle';
+      osc.type = (idx === notes.length - 1) ? 'sine' : 'triangle';
       osc.frequency.setValueAtTime(freq, now + idx * 0.09);
 
-      gain.gain.setValueAtTime(0.15, now + idx * 0.09);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.09 + 0.25);
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(2000, now + idx * 0.09);
 
-      osc.connect(gain);
+      const dur = (idx === notes.length - 1) ? 0.8 : 0.25;
+      gain.gain.setValueAtTime(0.15, now + idx * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.005, now + idx * 0.09 + dur);
+
+      osc.connect(filter);
+      filter.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc.start(now + idx * 0.09);
-      osc.stop(now + idx * 0.09 + 0.25);
+      osc.stop(now + idx * 0.09 + dur);
     });
   }
 };
@@ -146,6 +192,8 @@ let gameStarted = false;
 let turnExpiresAt = null;
 let timerInterval = null;
 let wasGameStarted = false;
+let currentSettings = null;
+let selectedTapTile = null; // Rastreia peça selecionada no clique (Tap-to-Move)
 
 // Tabuleiro e Suporte locais (matrizes)
 const BOARD_ROWS = 12;
@@ -158,6 +206,109 @@ let rackState = Array(RACK_ROWS).fill(null).map(() => Array(RACK_COLS).fill(null
 
 // Rastreamento de arrasto
 let draggedTile = null; // Guarda a peça sendo arrastada { tile, source, row, col }
+
+/* ==========================================================================
+   LÓGICA DE VALIDAÇÃO LOCAL DO TABULEIRO (ASSISTENTE VISUAL EM TEMPO REAL)
+   ========================================================================== */
+function getBoardSegments(board) {
+  const segments = [];
+  for (let r = 0; r < BOARD_ROWS; r++) {
+    let currentSegment = [];
+    for (let c = 0; c < BOARD_COLS; c++) {
+      const tile = board[r][c];
+      if (tile !== null) {
+        currentSegment.push({ tile, r, c });
+      } else {
+        if (currentSegment.length > 0) {
+          segments.push(currentSegment);
+          currentSegment = [];
+        }
+      }
+    }
+    if (currentSegment.length > 0) {
+      segments.push(currentSegment);
+    }
+  }
+  return segments;
+}
+
+function checkGroup(segment) {
+  const nonJokers = segment.filter(item => !item.tile.isJoker);
+  if (nonJokers.length === 0) return true;
+
+  const targetValue = nonJokers[0].tile.value;
+  const sameValue = nonJokers.every(item => item.tile.value === targetValue);
+  if (!sameValue) return false;
+
+  const colors = nonJokers.map(item => item.tile.color);
+  const uniqueColors = new Set(colors);
+  if (uniqueColors.size !== colors.length) return false;
+
+  if (segment.length > 6) return false; // Maximo de cores e 6
+
+  return true;
+}
+
+function checkRun(segment) {
+  const nonJokers = segment.filter(item => !item.tile.isJoker);
+  if (nonJokers.length === 0) return true;
+
+  const targetColor = nonJokers[0].tile.color;
+  const sameColor = nonJokers.every(item => item.tile.color === targetColor);
+  if (!sameColor) return false;
+
+  if (segment.length > 13) return false;
+
+  const firstNonJokerIdx = segment.findIndex(item => !item.tile.isJoker);
+  const baseValue = nonJokers[0].tile.value;
+
+  for (let i = 0; i < segment.length; i++) {
+    const expectedValue = baseValue - firstNonJokerIdx + i;
+    if (expectedValue < 1 || expectedValue > 13) return false;
+
+    const currentItem = segment[i];
+    if (!currentItem.tile.isJoker) {
+      if (currentItem.tile.value !== expectedValue) return false;
+    }
+  }
+
+  return true;
+}
+
+function validateLocalBoard() {
+  const invalidTileIds = new Set();
+  const segments = getBoardSegments(boardState);
+
+  for (const segment of segments) {
+    let isSegmentValid = true;
+
+    if (segment.length < 3) {
+      isSegmentValid = false;
+    } else {
+      const isG = checkGroup(segment);
+      const isR = checkRun(segment);
+      if (!isG && !isR) {
+        isSegmentValid = false;
+      }
+
+      // Validação de coringas máximos por conjunto
+      if (isSegmentValid && currentSettings && currentSettings.maxJokersPerSet > 0) {
+        const jokerCount = segment.filter(item => item.tile.isJoker).length;
+        if (jokerCount > currentSettings.maxJokersPerSet) {
+          isSegmentValid = false;
+        }
+      }
+    }
+
+    if (!isSegmentValid) {
+      segment.forEach(item => {
+        invalidTileIds.add(item.tile.id);
+      });
+    }
+  }
+
+  return invalidTileIds;
+}
 
 // ELEMENTOS DO DOM
 const authScreen = document.getElementById('auth-screen');
@@ -237,6 +388,9 @@ socket.on('errorMsg', (msg) => {
 socket.on('infoMsg', (msg) => {
   showToast(msg, 'info');
   addLog(msg, 'system');
+  if (msg.includes('Meld Inicial') || msg.includes('Meld inicial') || msg.includes('baixou o Meld')) {
+    SoundManager.playMeldSuccess();
+  }
 });
 
 /* ==========================================================================
@@ -344,7 +498,7 @@ function startLocalCountdown(expiresAt) {
     gameTimerVal.textContent = `${timeLeft}s`;
 
     // Tique-taque sonoro no tempo crítico
-    if (timeLeft <= 10 && timeLeft > 0) {
+    if (timeLeft <= 15 && timeLeft > 0) {
       SoundManager.playTick();
     }
 
@@ -389,6 +543,7 @@ function switchScreen(targetScreen) {
 socket.on('roomUpdate', (room) => {
   roomCode = room.roomCode;
   gameStarted = room.gameStarted;
+  currentSettings = room.settings;
   
   // Atualiza códigos exibidos
   roomCodeVal.textContent = roomCode;
@@ -441,10 +596,24 @@ socket.on('roomUpdate', (room) => {
       const botBadge = p.isBot ? ' <span class="badge bot-badge">IA</span>' : '';
       const removeButton = (isHost && p.isBot) ? `<button class="btn-remove-bot" onclick="socket.emit('removeBot', { botId: '${p.id}' })">Remover</button>` : '';
 
+      let nameHtml = `${p.name} ${p.id === myId ? '(Você)' : ''}${botBadge}`;
+      if (isHost && p.isBot) {
+        nameHtml += `
+          <select class="select-setting select-difficulty-bot" style="width: 100px; height: 26px; padding: 2px 6px; font-size: 0.75rem; margin-left: 10px; display: inline-block; border-radius: 4px;" onchange="socket.emit('changeBotDifficulty', { botId: '${p.id}', difficulty: this.value })">
+            <option value="easy" ${p.difficulty === 'easy' ? 'selected' : ''}>Fácil</option>
+            <option value="medium" ${p.difficulty === 'medium' ? 'selected' : ''}>Médio</option>
+            <option value="hard" ${p.difficulty === 'hard' ? 'selected' : ''}>Mestre</option>
+          </select>
+        `;
+      } else if (p.isBot) {
+        const diffLabels = { easy: 'Fácil', medium: 'Médio', hard: 'Mestre' };
+        nameHtml += ` <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 5px;">(${diffLabels[p.difficulty] || 'Médio'})</span>`;
+      }
+
       li.innerHTML = `
         <div class="player-info">
           <div class="player-avatar"></div>
-          <span>${p.name} ${p.id === myId ? '(Você)' : ''}${botBadge}</span>
+          <span>${nameHtml}</span>
         </div>
         ${p.host ? '<span class="badge">Host</span>' : ''}
         ${removeButton}
@@ -545,9 +714,50 @@ socket.on('boardUpdated', ({ board }) => {
 });
 
 // Evento de Fim de Jogo
-socket.on('gameOver', ({ winnerName }) => {
+socket.on('gameOver', ({ winnerName, scores }) => {
   winnerTitle.textContent = 'Temos um Vencedor!';
   winnerAnnouncement.innerHTML = `O jogador <strong>${winnerName}</strong> jogou todas as peças e venceu o Rummikub!`;
+  
+  const wrapper = document.getElementById('game-over-scoreboard-wrapper');
+  if (wrapper && scores && scores.length > 0) {
+    let tableHtml = `
+      <table class="scoreboard-table">
+        <thead>
+          <tr>
+            <th>Posição</th>
+            <th>Jogador</th>
+            <th>Rodada</th>
+            <th>Acumulado</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    scores.forEach((s, idx) => {
+      const roundPointsClass = s.pointsThisRound >= 0 ? 'points-positive' : 'points-negative';
+      const roundPointsText = s.pointsThisRound >= 0 ? `+${s.pointsThisRound}` : s.pointsThisRound;
+      const accumPointsClass = s.pointsAccumulated >= 0 ? 'points-positive' : 'points-negative';
+      const accumPointsText = s.pointsAccumulated >= 0 ? `+${s.pointsAccumulated}` : s.pointsAccumulated;
+      
+      tableHtml += `
+        <tr style="${s.playerId === myId ? 'background: rgba(79, 70, 229, 0.12); font-weight: bold;' : ''}">
+          <td>${idx + 1}º</td>
+          <td>${s.name} ${s.playerId === myId ? '(Você)' : ''}</td>
+          <td class="points-round ${roundPointsClass}">${roundPointsText}</td>
+          <td class="points-accumulated ${accumPointsClass}">${accumPointsText}</td>
+        </tr>
+      `;
+    });
+    
+    tableHtml += `
+        </tbody>
+      </table>
+    `;
+    wrapper.innerHTML = tableHtml;
+  } else if (wrapper) {
+    wrapper.innerHTML = '';
+  }
+
   gameOverOverlay.classList.add('active');
   addLog(`Fim de jogo! ${winnerName} venceu a partida!`, 'success');
   SoundManager.playVictory(); // Som de vitória
@@ -697,6 +907,11 @@ function createTileElement(tile, source, r, c) {
   el.className = `tile ${tile.color}`;
   if (tile.isJoker) el.classList.add('joker');
   
+  // Highlight se for a peca selecionada por toque (selected-tap)
+  if (selectedTapTile && selectedTapTile.tile.id === tile.id) {
+    el.classList.add('selected-tap');
+  }
+  
   el.draggable = isMyTurn; // Só arrasta se for meu turno
   el.dataset.id = tile.id;
   el.dataset.source = source;
@@ -712,12 +927,34 @@ function createTileElement(tile, source, r, c) {
   el.addEventListener('dragstart', handleDragStart);
   el.addEventListener('dragend', handleDragEnd);
 
+  // Ouvinte de clique para Tap-to-move
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!isMyTurn) return;
+
+    const sourceVal = el.dataset.source;
+    const rowVal = parseInt(el.dataset.row);
+    const colVal = parseInt(el.dataset.col);
+    const tileObj = sourceVal === 'board' ? boardState[rowVal][colVal] : rackState[rowVal][colVal];
+
+    if (selectedTapTile && selectedTapTile.tile.id === tileObj.id) {
+      selectedTapTile = null;
+      document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected-tap'));
+    } else {
+      selectedTapTile = { tile: tileObj, source: sourceVal, row: rowVal, col: colVal };
+      document.querySelectorAll('.tile').forEach(t => t.classList.remove('selected-tap'));
+      el.classList.add('selected-tap');
+    }
+  });
+
   return el;
 }
 
 // Renderiza a mesa de jogo
 function renderBoard() {
   gameBoard.innerHTML = '';
+  const invalidTileIds = isMyTurn ? validateLocalBoard() : new Set();
+
   for (let r = 0; r < BOARD_ROWS; r++) {
     for (let c = 0; c < BOARD_COLS; c++) {
       const cell = document.createElement('div');
@@ -731,9 +968,47 @@ function renderBoard() {
       cell.addEventListener('dragleave', handleDragLeave);
       cell.addEventListener('drop', handleDrop);
 
+      // Evento de clique para receber clique para mover (Tap-to-move)
+      cell.addEventListener('click', (e) => {
+        if (e.target !== cell) return;
+        if (!isMyTurn || !selectedTapTile) return;
+        if (cell.children.length > 0) return;
+
+        const targetType = cell.dataset.type;
+        const targetRow = parseInt(cell.dataset.row);
+        const targetCol = parseInt(cell.dataset.col);
+
+        // 1. Remove da origem
+        if (selectedTapTile.source === 'board') {
+          boardState[selectedTapTile.row][selectedTapTile.col] = null;
+        } else {
+          rackState[selectedTapTile.row][selectedTapTile.col] = null;
+        }
+
+        // 2. Adiciona no destino
+        const isNewPlay = selectedTapTile.source === 'rack' || selectedTapTile.tile.newPlay;
+        boardState[targetRow][targetCol] = { ...selectedTapTile.tile, newPlay: isNewPlay };
+
+        const originalSource = selectedTapTile.source;
+        selectedTapTile = null;
+
+        // 3. Atualiza visivelmente e envia ao servidor
+        renderBoard();
+        renderRack();
+        SoundManager.playClack();
+
+        if (originalSource === 'board' || targetType === 'board') {
+          socket.emit('updateBoard', { board: boardState });
+        }
+      });
+
       const tile = boardState[r][c];
       if (tile) {
-        cell.appendChild(createTileElement(tile, 'board', r, c));
+        const tileEl = createTileElement(tile, 'board', r, c);
+        if (invalidTileIds.has(tile.id)) {
+          tileEl.classList.add('invalid-set');
+        }
+        cell.appendChild(tileEl);
       }
 
       gameBoard.appendChild(cell);
@@ -756,6 +1031,47 @@ function renderRack() {
       cell.addEventListener('dragover', handleDragOver);
       cell.addEventListener('dragleave', handleDragLeave);
       cell.addEventListener('drop', handleDrop);
+
+      // Evento de clique para receber clique para mover (Tap-to-move)
+      cell.addEventListener('click', (e) => {
+        if (e.target !== cell) return;
+        if (!isMyTurn || !selectedTapTile) return;
+        if (cell.children.length > 0) return;
+
+        const targetType = cell.dataset.type;
+        const targetRow = parseInt(cell.dataset.row);
+        const targetCol = parseInt(cell.dataset.col);
+
+        // Bloqueia colocar peça da mesa no suporte se não for jogada nova
+        if (selectedTapTile.source !== 'rack' && !selectedTapTile.tile.newPlay) {
+          showToast('Você não pode mover peças do tabuleiro para o seu suporte.', 'warning');
+          return;
+        }
+
+        // 1. Remove da origem
+        if (selectedTapTile.source === 'board') {
+          boardState[selectedTapTile.row][selectedTapTile.col] = null;
+        } else {
+          rackState[selectedTapTile.row][selectedTapTile.col] = null;
+        }
+
+        // 2. Adiciona no destino
+        const cleanedTile = { ...selectedTapTile.tile };
+        delete cleanedTile.newPlay;
+        rackState[targetRow][targetCol] = cleanedTile;
+
+        const originalSource = selectedTapTile.source;
+        selectedTapTile = null;
+
+        // 3. Atualiza visivelmente e envia ao servidor
+        renderBoard();
+        renderRack();
+        SoundManager.playClack();
+
+        if (originalSource === 'board' || targetType === 'board') {
+          socket.emit('updateBoard', { board: boardState });
+        }
+      });
 
       const tile = rackState[r][c];
       if (tile) {

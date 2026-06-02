@@ -43,6 +43,18 @@ const COLORS = ['red', 'blue', 'black', 'yellow', 'green', 'purple'];
 const BOARD_ROWS = 12;
 const BOARD_COLS = 25;
 
+// Personalidades e Nomes de Bots (IAs) baseados na Dificuldade
+const BOT_NAMES = {
+  easy: ["Robo Estreante", "Silicio Lento", "Calculadora 8-bits", "Bot Novato", "IA Devagar", "Chip Calmo"],
+  medium: ["DeepBlue Jr", "Turing-Bot", "Algoritmo Amigo", "Calculador", "IA Padrao", "CodeRunner"],
+  hard: ["Ada Lovelace", "DeepMind Bot", "Antigravity AI", "Alan Turing", "Stockfish Rummy", "WOPR"]
+};
+
+function getBotName(difficulty, index) {
+  const names = BOT_NAMES[difficulty] || BOT_NAMES.medium;
+  return names[index % names.length];
+}
+
 function generatePool() {
   const pool = [];
   let tileId = 1;
@@ -275,9 +287,10 @@ function startTurnTimer(room) {
     room.turnExpiresAt = null;
     const activePlayer = room.players[room.currentTurnIndex];
     if (activePlayer && activePlayer.isBot) {
+      const delay = activePlayer.difficulty === 'easy' ? 2500 : (activePlayer.difficulty === 'hard' ? 800 : 1500);
       room.turnTimer = setTimeout(() => {
         runBotTurn(room);
-      }, 1500);
+      }, delay);
     }
     return;
   }
@@ -287,9 +300,10 @@ function startTurnTimer(room) {
   const activePlayer = room.players[room.currentTurnIndex];
   if (activePlayer && activePlayer.isBot) {
     room.turnExpiresAt = null;
+    const delay = activePlayer.difficulty === 'easy' ? 2500 : (activePlayer.difficulty === 'hard' ? 800 : 1500);
     room.turnTimer = setTimeout(() => {
       runBotTurn(room);
-    }, 1500);
+    }, delay);
     return;
   }
 
@@ -427,13 +441,15 @@ function findOneSet(rack, maxJokersAllowed) {
   return null;
 }
 
-function findSetsInRack(rack, settings) {
+function findSetsInRack(rack, settings, ignoreJokers = false) {
+  let tempRack = [...rack];
+  if (ignoreJokers) {
+    tempRack = tempRack.filter(t => !t.isJoker);
+  }
   const maxJokers = (settings && typeof settings.maxJokersPerSet === 'number') ? settings.maxJokersPerSet : 0;
-  const maxJokersAllowed = maxJokers > 0 ? maxJokers : 4;
+  const maxJokersAllowed = ignoreJokers ? 0 : (maxJokers > 0 ? maxJokers : 4);
 
   const sets = [];
-  let tempRack = [...rack];
-
   while (true) {
     const foundSet = findOneSet(tempRack, maxJokersAllowed);
     if (!foundSet) break;
@@ -459,9 +475,12 @@ function placeNewSetOnBoard(board, set) {
   return false;
 }
 
-function tryAcoplarPeças(bot, room) {
+function tryAcoplarPeças(bot, room, ignoreJokers = false) {
   let piecePlayed = false;
   let rackTiles = [...bot.rack];
+  if (ignoreJokers) {
+    rackTiles = rackTiles.filter(t => !t.isJoker);
+  }
   let cardsToTry = true;
 
   while (cardsToTry) {
@@ -519,7 +538,8 @@ function tryAcoplarPeças(bot, room) {
 }
 
 function tryMeldInicial(bot, room) {
-  const sets = findSetsInRack(bot.rack, room.settings);
+  const ignoreJokers = bot.difficulty === 'easy';
+  const sets = findSetsInRack(bot.rack, room.settings, ignoreJokers);
   if (sets.length === 0) return false;
 
   let totalMeldPoints = 0;
@@ -561,23 +581,92 @@ function tryMeldInicial(bot, room) {
   return false;
 }
 
+function calculateGameOverScores(room, winnerId) {
+  const roundScores = new Map();
+  let totalNegativePoints = 0;
+
+  // 1. Calcula pontos de cada perdedor
+  room.players.forEach(player => {
+    if (player.id !== winnerId) {
+      let points = 0;
+      player.rack.forEach(tile => {
+        if (tile.isJoker) {
+          points += 30; // Coringa vale -30
+        } else {
+          points += tile.value; // Peças normais valem seu valor
+        }
+      });
+      // Pontos para o perdedor são negativos
+      roundScores.set(player.id, -points);
+      totalNegativePoints += points;
+    }
+  });
+
+  // 2. O vencedor ganha a soma de todos os pontos perdidos (em valor absoluto)
+  roundScores.set(winnerId, totalNegativePoints);
+
+  // 3. Atualiza o acumulado e monta o array de resultado
+  const scoresPayload = room.players.map(player => {
+    const pointsThisRound = roundScores.get(player.id) || 0;
+    
+    // Atualiza acumulado
+    let currentAccumulated = room.scores.get(player.id) || 0;
+    currentAccumulated += pointsThisRound;
+    room.scores.set(player.id, currentAccumulated);
+
+    return {
+      playerId: player.id,
+      name: player.name,
+      pointsThisRound: pointsThisRound,
+      pointsAccumulated: currentAccumulated,
+      isWinner: player.id === winnerId
+    };
+  });
+
+  // Ordena por pontuação acumulada decrescente
+  scoresPayload.sort((a, b) => b.pointsAccumulated - a.pointsAccumulated);
+
+  return scoresPayload;
+}
+
 function runBotTurn(room) {
   const bot = room.players[room.currentTurnIndex];
   if (!bot || !bot.isBot) return;
 
-  console.log(`[IA] Iniciando turno do bot: ${bot.name}`);
+  console.log(`[IA] Iniciando turno do bot: ${bot.name} (Dificuldade: ${bot.difficulty || 'medium'})`);
+
+  // IA Fácil: 40% de chance de apenas comprar carta e passar a vez
+  if (bot.difficulty === 'easy' && Math.random() < 0.4) {
+    console.log(`[IA Fácil] Escolheu comprar e passar aleatoriamente.`);
+    if (room.pool.length > 0) {
+      const newTile = room.pool.pop();
+      bot.rack.push(newTile);
+    }
+    io.to(room.id).emit('infoMsg', `${bot.name} comprou uma peça.`);
+    
+    room.currentTurnIndex = (room.currentTurnIndex + 1) % room.players.length;
+    room.initialBoardState = JSON.stringify(room.board);
+    room.initialRacks = new Map();
+    room.players.forEach(p => {
+      room.initialRacks.set(p.id, JSON.stringify(p.rack));
+    });
+    startTurnTimer(room);
+    broadcastRoomUpdate(room);
+    return;
+  }
+
   let piecePlayed = false;
+  const ignoreJokers = bot.difficulty === 'easy';
 
   const hasMeld = room.meldStatus.get(bot.id);
   if (!hasMeld) {
     piecePlayed = tryMeldInicial(bot, room);
   } else {
     // Jogada regular:
-    // A. Tenta acoplar peças nos conjuntos da mesa
-    const acoplou = tryAcoplarPeças(bot, room);
+    const acoplou = tryAcoplarPeças(bot, room, ignoreJokers);
     
     // B. Tenta baixar novos conjuntos inteiros do rack
-    const sets = findSetsInRack(bot.rack, room.settings);
+    const sets = findSetsInRack(bot.rack, room.settings, ignoreJokers);
     let baixouNovos = false;
     for (const set of sets) {
       const placed = placeNewSetOnBoard(room.board, set);
@@ -596,7 +685,8 @@ function runBotTurn(room) {
     
     // Verifica se venceu
     if (bot.rack.length === 0) {
-      io.to(room.id).emit('gameOver', { winnerName: bot.name });
+      const scores = calculateGameOverScores(room, bot.id);
+      io.to(room.id).emit('gameOver', { winnerName: bot.name, scores });
       room.gameStarted = false;
       broadcastRoomUpdate(room);
       return;
@@ -691,18 +781,58 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const botCount = targetRoom.players.filter(p => p.isBot).length;
+    const defaultDiff = 'medium';
+    const botCount = targetRoom.players.filter(p => p.isBot && p.difficulty === defaultDiff).length;
     const botId = `bot_${Math.random().toString(36).substr(2, 9)}`;
     targetRoom.players.push({
       id: botId,
-      name: `IA ${botCount + 1}`,
+      name: getBotName(defaultDiff, botCount),
       socketId: null,
       rack: [],
       host: false,
-      isBot: true
+      isBot: true,
+      difficulty: defaultDiff
     });
 
     broadcastRoomUpdate(targetRoom);
+  });
+
+  // Alterar dificuldade do bot (Apenas Host)
+  socket.on('changeBotDifficulty', ({ botId, difficulty }) => {
+    let targetRoom = null;
+    for (const room of rooms.values()) {
+      const hostPlayer = room.players.find(p => p.socketId === socket.id && p.host);
+      if (hostPlayer) {
+        targetRoom = room;
+        break;
+      }
+    }
+
+    if (!targetRoom) {
+      socket.emit('errorMsg', 'Apenas o anfitrião pode alterar a dificuldade dos bots.');
+      return;
+    }
+
+    if (targetRoom.gameStarted) {
+      socket.emit('errorMsg', 'Não é possível alterar a dificuldade com o jogo em andamento.');
+      return;
+    }
+
+    const bot = targetRoom.players.find(p => p.id === botId && p.isBot);
+    if (bot) {
+      bot.difficulty = difficulty;
+      
+      // Reconstrói nomes com base na dificuldade para evitar duplicatas ordinais
+      let botCountMap = { easy: 0, medium: 0, hard: 0 };
+      targetRoom.players.forEach(p => {
+        if (p.isBot) {
+          const diff = p.difficulty || 'medium';
+          p.name = getBotName(diff, botCountMap[diff]++);
+        }
+      });
+
+      broadcastRoomUpdate(targetRoom);
+    }
   });
 
   // Remover bot da sala (Apenas Host)
@@ -729,18 +859,19 @@ io.on('connection', (socket) => {
     const idx = targetRoom.players.findIndex(p => p.id === botId && p.isBot);
     if (idx !== -1) {
       targetRoom.players.splice(idx, 1);
+      targetRoom.scores.delete(botId); // Limpa score do bot removido
       
       // Renomeia os bots restantes de forma ordinal
-      let count = 1;
+      let botCountMap = { easy: 0, medium: 0, hard: 0 };
       targetRoom.players.forEach(p => {
         if (p.isBot) {
-          p.name = `IA ${count++}`;
+          const diff = p.difficulty || 'medium';
+          p.name = getBotName(diff, botCountMap[diff]++);
         }
       });
       broadcastRoomUpdate(targetRoom);
     }
   });
-
 
   // Criar sala
   socket.on('createRoom', ({ playerName }) => {
@@ -764,6 +895,7 @@ io.on('connection', (socket) => {
       board: generateEmptyBoard(),
       currentTurnIndex: 0,
       meldStatus: new Map(),
+      scores: new Map(), // Para acumular as pontuações entre partidas
       initialBoardState: null, // Guarda o estado inicial do turno para desfazer
       turnTimer: null,
       turnExpiresAt: null,
@@ -876,6 +1008,13 @@ io.on('connection', (socket) => {
     targetRoom.board = generateEmptyBoard();
     targetRoom.currentTurnIndex = 0;
     targetRoom.meldStatus.clear();
+
+    // Inicializa scores acumulados para quem ainda nao tem
+    targetRoom.players.forEach(player => {
+      if (!targetRoom.scores.has(player.id)) {
+        targetRoom.scores.set(player.id, 0);
+      }
+    });
 
     // Distribui 14 peças para cada jogador
     targetRoom.players.forEach(player => {
@@ -1175,7 +1314,8 @@ io.on('connection', (socket) => {
 
     // Verificar se o jogador venceu
     if (player.rack.length === 0) {
-      io.to(targetRoom.id).emit('gameOver', { winnerName: player.name });
+      const scores = calculateGameOverScores(targetRoom, player.id);
+      io.to(targetRoom.id).emit('gameOver', { winnerName: player.name, scores });
       targetRoom.gameStarted = false; // Reseta status do jogo
       broadcastRoomUpdate(targetRoom);
       return;
@@ -1244,6 +1384,7 @@ io.on('connection', (socket) => {
         
         room.players.splice(idx, 1);
         room.meldStatus.delete(socket.id);
+        room.scores.delete(socket.id);
 
         if (room.players.length === 0) {
           // Excluir sala se vazia
