@@ -295,6 +295,17 @@ btnLobbyExit.addEventListener('click', () => {
   }
 });
 
+// Evento de Sair da Sala (Lobby)
+const lobbyLeaveBtn = document.getElementById('lobby-leave-btn');
+if (lobbyLeaveBtn) {
+  lobbyLeaveBtn.addEventListener('click', () => {
+    if (confirm('Deseja realmente sair da sala de espera?')) {
+      socket.disconnect();
+      window.location.reload();
+    }
+  });
+}
+
 function startLocalCountdown(expiresAt) {
   if (timerInterval) {
     clearInterval(timerInterval);
