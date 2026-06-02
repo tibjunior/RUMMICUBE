@@ -250,6 +250,8 @@ function generateRoomCode() {
 // Envia atualizações filtradas da sala para todos os jogadores (oculta os racks dos adversários)
 function broadcastRoomUpdate(room) {
   room.players.forEach(player => {
+    if (player.isBot) return; // Ignora bots já que eles não têm conexão socket
+    
     // Formata o estado da sala para este jogador específico
     const payload = {
       roomCode: room.id,
