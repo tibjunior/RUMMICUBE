@@ -125,35 +125,84 @@ body {
 }
 
 .btn.primary {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
   color: white;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .btn.primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(79, 70, 229, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.btn.primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 5px rgba(79, 70, 229, 0.2);
 }
 
 .btn.secondary {
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
   color: var(--text-main);
   border: 1px solid var(--bg-card-border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .btn.secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+  transform: translateY(-1px);
+}
+.btn.secondary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
-.btn.warning { background: var(--btn-warning); color: #000; }
-.btn.warning:hover:not(:disabled) { background: #d97706; }
+.btn.warning { 
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+  color: #000; 
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.btn.warning:hover:not(:disabled) { 
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.btn.warning:active:not(:disabled) {
+  transform: translateY(0);
+}
 
-.btn.danger { background: var(--btn-danger); color: white; }
-.btn.danger:hover:not(:disabled) { background: #dc2626; }
+.btn.danger { 
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+  color: white; 
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.btn.danger:hover:not(:disabled) { 
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(239, 68, 68, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.btn.danger:active:not(:disabled) {
+  transform: translateY(0);
+}
 
-.btn.info { background: var(--btn-info); color: white; }
-.btn.info:hover:not(:disabled) { background: #0891b2; }
+.btn.info { 
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); 
+  color: white; 
+  box-shadow: 0 4px 10px rgba(6, 182, 212, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.btn.info:hover:not(:disabled) { 
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(6, 182, 212, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.btn.info:active:not(:disabled) {
+  transform: translateY(0);
+}
 
-.btn.success { background: var(--btn-success); color: white; }
-.btn.success:hover:not(:disabled) { background: #059669; }
+.btn.success { 
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+  color: white; 
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.btn.success:hover:not(:disabled) { 
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.btn.success:active:not(:disabled) {
+  transform: translateY(0);
+}
 
 .font-bold {
   font-weight: 800;
@@ -633,9 +682,10 @@ body {
 }
 
 #scoreboard-list li.active {
-  background: rgba(79, 70, 229, 0.15);
-  border-color: rgba(79, 70, 229, 0.4);
-  box-shadow: 0 0 15px rgba(79, 70, 229, 0.1) inset;
+  background: linear-gradient(90deg, rgba(79, 70, 229, 0.22) 0%, rgba(22, 28, 45, 0.4) 100%);
+  border-color: var(--primary);
+  border-left: 4px solid var(--primary);
+  box-shadow: 0 0 18px rgba(79, 70, 229, 0.12) inset, 0 4px 10px rgba(0, 0, 0, 0.25);
   animation: pulseActive 2s infinite ease-in-out;
 }
 
@@ -731,18 +781,20 @@ body {
 
 /* Mesa (Board) e Suporte (Rack) wrapper */
 .board-wrapper, .rack-wrapper {
-  background: var(--bg-card);
-  border: 1px solid var(--bg-card-border);
-  border-radius: 12px;
-  padding: 15px;
+  background: linear-gradient(180deg, rgba(22, 28, 45, 0.85) 0%, rgba(15, 18, 30, 0.85) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
 }
 
 .board-wrapper {
   flex: 1;
   min-height: 380px;
+  border-color: rgba(79, 70, 229, 0.15);
 }
 
 .board-title, .rack-title {
@@ -758,11 +810,17 @@ body {
 .tiles-grid {
   display: grid;
   gap: 4px;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.35);
   padding: 8px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   overflow: auto;
+  /* Padrão de grade sutil para tabletop virtual premium */
+  background-image: 
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0),
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
 }
 
 /* Mesa Comum: 12 linhas x 25 colunas */
@@ -780,20 +838,27 @@ body {
   min-height: 128px;
 }
 
-/* Célula do Grid */
+/* Célula do Grid (Efeito rebaixado de slot para encaixe) */
 .grid-cell {
-  background: rgba(255, 255, 255, 0.015);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease;
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.6), inset -1px -1px 1px rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease;
+}
+
+.grid-cell:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .grid-cell.drag-over {
-  background: rgba(79, 70, 229, 0.15);
-  border-color: rgba(79, 70, 229, 0.5);
+  background: rgba(79, 70, 229, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.3) inset;
 }
 
 /* ==========================================================================
