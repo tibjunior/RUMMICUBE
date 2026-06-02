@@ -145,6 +145,7 @@ let isMyTurn = false;
 let gameStarted = false;
 let turnExpiresAt = null;
 let timerInterval = null;
+let wasGameStarted = false;
 
 // Tabuleiro e Suporte locais (matrizes)
 const BOARD_ROWS = 12;
@@ -174,8 +175,9 @@ const addBotBtn = document.getElementById('add-bot-btn');
 const roomCodeVal = document.getElementById('room-code-value');
 const lobbyCount = document.getElementById('lobby-count');
 const playersList = document.getElementById('players-list');
-
-// Elementos Jogo
+const lobbyChatInput = document.getElementById('lobby-chat-input');
+const lobbyChatMessages = document.getElementById('lobby-chat-messages');
+const btnSendLobbyChat = document.getElementById('btn-send-lobby-chat');
 const poolCountVal = document.getElementById('pool-count-val');
 const gameRoomCode = document.getElementById('game-room-code');
 const scoreboardList = document.getElementById('scoreboard-list');
@@ -272,6 +274,24 @@ startBtn.addEventListener('click', () => {
 addBotBtn.addEventListener('click', () => {
   socket.emit('addBot');
 });
+
+function sendLobbyChatMessage() {
+  if (!lobbyChatInput) return;
+  const text = lobbyChatInput.value.trim();
+  if (text) {
+    socket.emit('sendChat', { msg: text });
+    lobbyChatInput.value = '';
+  }
+}
+
+if (btnSendLobbyChat && lobbyChatInput) {
+  btnSendLobbyChat.addEventListener('click', sendLobbyChatMessage);
+  lobbyChatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      sendLobbyChatMessage();
+    }
+  });
+}
 
 btnRestartLobby.addEventListener('click', () => {
   gameOverOverlay.classList.remove('active');
@@ -377,6 +397,13 @@ socket.on('roomUpdate', (room) => {
 
   // 1. Atualiza Tela de Lobby
   if (!gameStarted) {
+    if (wasGameStarted) {
+      // Voltou do jogo ativo para o lobby! Reseta as caixas de chat
+      if (lobbyChatMessages) lobbyChatMessages.innerHTML = '';
+      if (chatMessages) chatMessages.innerHTML = '';
+    }
+    wasGameStarted = false;
+
     // Para contagens regressivas se voltar ao lobby
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -437,6 +464,7 @@ socket.on('roomUpdate', (room) => {
   
   // 2. Jogo em Andamento
   else {
+    wasGameStarted = true;
     switchScreen(gameScreen);
     
     // Ajusta visualização do botão Sair/Voltar com base em se somos o host
@@ -952,14 +980,25 @@ if (btnSendChat && chatInput) {
 }
 
 socket.on('chatMsg', ({ senderName, msg }) => {
+  const entryHtml = `<span class="chat-msg-sender">${senderName}:</span><span class="chat-msg-text">${msg}</span>`;
+
   if (chatMessages) {
     const entry = document.createElement('div');
     entry.className = 'chat-msg-entry';
-    entry.innerHTML = `<span class="chat-msg-sender">${senderName}:</span><span class="chat-msg-text">${msg}</span>`;
+    entry.innerHTML = entryHtml;
     chatMessages.appendChild(entry);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    SoundManager.playDraw();
   }
+
+  if (lobbyChatMessages) {
+    const entry = document.createElement('div');
+    entry.className = 'chat-msg-entry';
+    entry.innerHTML = entryHtml;
+    lobbyChatMessages.appendChild(entry);
+    lobbyChatMessages.scrollTop = lobbyChatMessages.scrollHeight;
+  }
+
+  SoundManager.playDraw();
 });
 
 // 4. Reações Rápidas e Emojis Flutuantes

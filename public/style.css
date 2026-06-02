@@ -1231,3 +1231,122 @@ body.theme-neon .tile {
     opacity: 0;
   }
 }
+
+/* ==========================================================================
+   CHAT DO LOBBY (SALA DE ESPERA)
+   ========================================================================== */
+.lobby-container {
+  display: flex;
+  gap: 25px;
+  max-width: 1050px;
+  width: 95%;
+  align-items: stretch;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.lobby-card {
+  flex: 1.2;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  text-align: left;
+}
+
+.lobby-chat-card {
+  flex: 0.8;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: 480px;
+}
+
+.lobby-chat-header {
+  border-bottom: 1px solid var(--bg-card-border);
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lobby-chat-header h3 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--text-main);
+}
+
+.chat-status-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--btn-success);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--btn-success);
+  animation: pulseActive 2s infinite ease-in-out;
+}
+
+.lobby-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 350px;
+  padding-right: 5px;
+  margin-bottom: 15px;
+}
+
+.lobby-chat-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.lobby-chat-messages::-webkit-scrollbar-thumb {
+  background: var(--bg-card-border);
+  border-radius: 2px;
+}
+
+.lobby-chat-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.lobby-chat-input-group input {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.lobby-chat-input-group input:focus {
+  border-color: var(--primary);
+}
+
+.lobby-chat-input-group .btn {
+  padding: 12px 20px;
+  font-size: 0.9rem;
+}
+
+/* Responsividade do Lobby */
+@media (max-width: 900px) {
+  .lobby-container {
+    flex-direction: column;
+    max-width: 550px;
+  }
+  .lobby-chat-card {
+    min-height: 300px;
+  }
+}
